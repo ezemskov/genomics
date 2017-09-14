@@ -1,10 +1,16 @@
+package org.PSSMHC;
+
 import java.lang.Math;
 import java.util.*;
 import java.lang.System;
 import java.lang.String;
 import java.io.*;
 
-class PSSMbench 
+class PSSMHCParser
+{
+}
+
+class PSSMHCpan
 {
     static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
     static String peptide = "CLMPCGRRQ";
@@ -16,7 +22,13 @@ class PSSMbench
     public static class WeightMatrixRow extends HashMap<Character, Double> {}
     public static class WeightMatrix extends ArrayList<WeightMatrixRow> {}
 
+    public static class AllelePair { public String name; public int length; }
+    public static class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
+
+
     WeightMatrix weight_matrix = new WeightMatrix();
+
+//BufferedReader in = new BufferedReader(new FileReader("foo.in"));
 
     private static WeightMatrixRow RandomRow()
     {
@@ -28,7 +40,7 @@ class PSSMbench
         return res;
     }
 
-    PSSMbench()
+    PSSMHCpan()
     {
         for (int i=0; i<peptide.length(); i++)
         {
@@ -54,7 +66,7 @@ class PSSMbench
 
     public static void main(String[] args) 
     {
-        PSSMbench b = new PSSMbench();
+        PSSMHCpan b = new PSSMHCpan();
 
         long startTime = System.currentTimeMillis();
         try
