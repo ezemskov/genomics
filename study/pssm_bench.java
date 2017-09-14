@@ -6,7 +6,7 @@ import java.io.*;
 
 class PSSMbench 
 {
-    static char alphabet[] = {'A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y'};
+    static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
     static String peptide = "CLMPCGRRQ";
 
     static double score_max = 0.8;
@@ -17,11 +17,10 @@ class PSSMbench
 
     private static Map<Character, Double> RandomRow()
     {
-        //Map<Character, Double> res = new HashMap<Character, Double>(alphabet.length);
         Map<Character, Double> res = new HashMap<Character, Double>();
-        for (int i=0; i<alphabet.length; i++)
+        for (int i=0; i<alphabet.length(); i++)
         {
-            res.put(new Character(alphabet[i]), 2 * Math.random());
+            res.put(new Character(alphabet.charAt(i)), 2 * Math.random());
         }
         return res;
     }
@@ -59,10 +58,14 @@ class PSSMbench
         {
             PrintWriter writer = new PrintWriter("res.txt", "UTF-8");
 
-            for (int i=0; i<1000000; i++)
+            for (int i=0; i<2000000; i++)
             {
                 double ic50 = b.score_one_peptide();
-                writer.format("%s %f\n", peptide, ic50);
+            }
+
+            for (int i=0; i<50000; i++)
+            {
+                writer.format("%s %f\n", peptide, 5.5555);
             }
             writer.close();
         } 

@@ -60,8 +60,10 @@ def score_one_peptide():
 def score_one_peptide_loop():
 
     with open("res_py.txt", "w") as f:
-        for i in range(1000000):
+        for i in range(2000000):
             ic50 = score_one_peptide();          
+
+        for i in range(50000):
             f.write("{0} {1}\n".format(peptide, ic50))
     
 
