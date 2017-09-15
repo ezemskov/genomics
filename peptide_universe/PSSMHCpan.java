@@ -13,13 +13,13 @@ class AllelePair
 {
     public int hashCode()
     {
-        return alName.hashCode() + pepLength;
+        return String.format("%s_%d", alName, pepLength).hashCode();
     }
 
     public boolean equals(Object obj)
     {
-        AllelePair al = (AllelePair)obj;
-        return (obj != null) && (this.alName == al.alName) && (this.pepLength == al.pepLength);
+        AllelePair ap = (AllelePair)obj;
+        return (ap != null) && (alName.equals(ap.alName)) && (pepLength == ap.pepLength);
     }
 
     public String alName; 
@@ -86,10 +86,10 @@ class PSSMParser
             }
 
             int iRow = 0;
-            while (reader.ready())
+            while (reader.ready() && (iRow < alphabet.length()))
             {
                 String[] row = reader.readLine().split("\t");
-                if ((iRow >= res.size()) || (row.length > colsQnty))
+                if (row.length > colsQnty)
                 {
                     System.err.format("Invalid PSSM size : [%d by %d]\n", iRow, row.length);
                     return res;
@@ -97,7 +97,7 @@ class PSSMParser
 
                 for (int iCol=0; iCol<colsQnty; iCol++)
                 {
-                    res.get(iRow).put(new Character(alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
+                    res.get(iCol).put(new Character(alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
                 }
 
                 iRow +=1;
@@ -168,31 +168,17 @@ class PSSMHCpan
 
     public static void main(String[] args) 
     {
-
-        long startTime = System.currentTimeMillis();
-        
         PSSMHCpan app = new PSSMHCpan(args);
 
         try
         {
             PrintWriter writer = new PrintWriter("res.txt", "UTF-8");
-
-            for (int i=0; i<500000; i++)
-            {
-                double ic50 = app.score_one_peptide();
-            }
-
-            for (int i=0; i<50000; i++)
-            {
-                writer.format("%s %f\n", peptide, 5.5555);
-            }
+            double ic50 = app.score_one_peptide();
+            writer.format("%s %f\n", peptide, ic50);
             writer.close();
         } 
         catch (IOException e) {
            // do something
-        }        
-        long duration = System.currentTimeMillis() - startTime;
-        System.out.format("Duration %d msec\n", duration);
-
+        }
     }
 }
