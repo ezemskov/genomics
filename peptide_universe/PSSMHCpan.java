@@ -9,23 +9,23 @@ import java.io.*;
 class WeightMatrixColumn extends HashMap<Character, Double> {}
 class WeightMatrix extends ArrayList<WeightMatrixColumn> {}
 
-class Allele 
+class AllelePair
 {
     public int hashCode()
     {
-        return name.hashCode() + length;
+        return alName.hashCode() + pepLength;
     }
 
     public boolean equals(Object obj)
     {
-        Allele al = (Allele)obj;
-        return (obj != null) && (this.name == al.name) && (this.length == al.length);
+        AllelePair al = (AllelePair)obj;
+        return (obj != null) && (this.alName == al.alName) && (this.pepLength == al.pepLength);
     }
 
-    public String name; 
-    public int length; 
+    public String alName; 
+    public int pepLength; 
 }
-class WeightMatrices extends HashMap<Allele, WeightMatrix> {}
+class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
 class PSSMParser
 {
@@ -48,9 +48,9 @@ class PSSMParser
                     continue;
                 }
 
-                Allele al = new Allele();
-                al.name = row[1];
-                al.length = Integer.parseInt(row[2]);   
+                AllelePair al = new AllelePair();
+                al.alName = row[1];
+                al.pepLength = Integer.parseInt(row[2]);   
 
                 String pssmFilePath = row[0];
                 WeightMatrix pssm  = ParseOnePSSM(pssmFilePath);
@@ -127,7 +127,7 @@ class PSSMHCpan
     
     private String peptidesFilename, alleleName, PSSMlistFilename;
     private int peptideLength;
-    private Allele al = new Allele();
+    private AllelePair al = new AllelePair();
 
 
     WeightMatrices pssms = null;
@@ -141,8 +141,8 @@ class PSSMHCpan
         }
         
         peptidesFilename = args[0];
-        al.length = Integer.parseInt(args[1]);
-        al.name = args[2];
+        al.pepLength = Integer.parseInt(args[1]);
+        al.alName = args[2];
         PSSMlistFilename = args[3];
 
         pssms = PSSMParser.ParsePSSMfileList(PSSMlistFilename);
