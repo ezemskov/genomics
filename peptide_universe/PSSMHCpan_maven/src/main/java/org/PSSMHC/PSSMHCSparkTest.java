@@ -1,5 +1,6 @@
 package org.PSSMHC;
 
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -7,9 +8,22 @@ import org.apache.spark.sql.SparkSession;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class PSSMHCSparkTest
+class PSSMHCpanSpark extends PSSMHCpan
+                     implements Function<String,ScoredPeptide>
 {
-    
+    PSSMHCpanSpark(String[] args)
+    {
+        super(args);
+    }
+
+    public ScoredPeptide call(String peptide)
+    {
+        return new ScoredPeptide(peptide, ScoreOnePeptide(peptide));
+    }
+}
+
+public final class PSSMHCSparkTest
+{   
     public static void main(String[] args) throws Exception 
     {
         SparkSession spark = SparkSession
@@ -19,21 +33,14 @@ public final class PSSMHCSparkTest
 
         JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
         
-        PSSMHCPan app = new PSSMHCpan(args);        
+        PSSMHCpanSpark app = new PSSMHCpanSpark(args);        
         int partitions = 2;
+
+        JavaRDD<String> peptideRDD = jsc.parallelize(app.peptides2, partitions);
+        JavaRDD<ScoredPeptide> peptideRDD2 = peptideRDD.map(app);
         
-        app.ScoreAllPeptides();
-        /*
-        JavaRDD<Integer> dataSet = jsc.parallelize(l, slices);
-
-        int count = dataSet.map(integer -> {
-          double x = Math.random() * 2 - 1;
-          double y = Math.random() * 2 - 1;
-          return (x * x + y * y <= 1) ? 1 : 0;
-        }).reduce((integer, integer2) -> integer + integer2);
-
-        System.out.println("Pi is roughly " + 4.0 * count / n);
-    */
+        peptideRDD2.saveAsTextFile("OutputPSSMHC");
+        
         spark.stop();
     }
 }

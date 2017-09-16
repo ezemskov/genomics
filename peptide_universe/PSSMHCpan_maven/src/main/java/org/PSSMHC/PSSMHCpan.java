@@ -163,7 +163,7 @@ class PSSMParser
     }
 }
 
-public final class PSSMHCpan
+public class PSSMHCpan
 {
     private static double score_max = 0.8;
     private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
@@ -174,13 +174,15 @@ public final class PSSMHCpan
     private AllelePair al = new AllelePair();
 
     private WeightMatrices pssms = null;
-    private ArrayList<ScoredPeptide> peptides = new ArrayList<ScoredPeptide>();
+    public ArrayList<ScoredPeptide> peptides = new ArrayList<ScoredPeptide>();
+    public ArrayList<String> peptides2 = new ArrayList<String>();
         
     PSSMHCpan(String[] args)
     {
         if (args.length != 4)
         {
-            System.out.format("Usage : java PSSMHCpan peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
+            System.err.format("Usage : java PSSMHCpan peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
+            System.err.format("Actual args qnty %d\n", args.length);
             System.exit(1);
         }
         
@@ -191,6 +193,11 @@ public final class PSSMHCpan
 
         pssms = PSSMParser.ParsePSSMfileList(PSSMlistFilename);
         peptides = PSSMParser.ParseFasta(peptidesFilename);
+        
+        for (ScoredPeptide scp : peptides)
+        {
+            peptides2.add(scp.peptide);
+        }
     }
 
     public double ScoreOnePeptide(String peptide)
@@ -223,7 +230,10 @@ public final class PSSMHCpan
             System.out.format("%s %f\n", scPep.peptide, scPep.ic50);
         }
     }
-    
+}
+
+class MainWrapper
+{    
     public static void main(String[] args) 
     {
         PSSMHCpan app = new PSSMHCpan(args);
