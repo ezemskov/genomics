@@ -27,10 +27,53 @@ class AllelePair
 }
 class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
+/*
+class ScoredPeptide
+{
+    public String peptide; 
+    public double score; 
+}
+*/
+
 class PSSMParser
 {
     public static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
+    private static String alphabetRegex = "[" + alphabet + "]+";
 
+    public static ArrayList<String> ParseFasta(String filePath)
+    {
+        ArrayList<String> res = new ArrayList<String>();
+        try
+        {
+            BufferedReader reader = new BufferedReader(new FileReader(filePath));
+            while (reader.ready())
+            {
+                String recHeader = reader.readLine();
+                if (recHeader.charAt(0) != '>')
+                {
+                    System.err.format("Wrong Fasta record header '%s' in %s, ignore rest of the file\n", recHeader, filePath);
+                    return res;
+                }
+                
+                String rec = reader.readLine();
+                if (rec.matches(alphabetRegex))
+                {
+                    res.add(rec);
+                }
+                else
+                {
+                    System.err.format("Skip wrong Fasta record '%s' in %s\n", rec, filePath);
+                }
+            }
+        }
+        catch (Exception e) 
+        {
+            System.err.format("Error reading %s : %s\n", filePath, e.getMessage());
+        }        
+        return res;
+    }
+    
+    
     //filePath is pssm_file.list
     public static WeightMatrices ParsePSSMfileList(String filePath)
     {
@@ -118,20 +161,17 @@ class PSSMParser
 
 class PSSMHCpan
 {
-    static String peptide = "CLMPCGRRQ";
-
-    static double score_max = 0.8;
-    static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
-    static double score_range = score_max - score_min;
-
+    private static double score_max = 0.8;
+    private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
+    private static double score_range = score_max - score_min;
     
     private String peptidesFilename, alleleName, PSSMlistFilename;
     private int peptideLength;
     private AllelePair al = new AllelePair();
 
-
-    WeightMatrices pssms = null;
-
+    private WeightMatrices pssms = null;
+    private ArrayList<String> peptides = new ArrayList<String>();
+        
     PSSMHCpan(String[] args)
     {
         if (args.length != 4)
@@ -146,9 +186,10 @@ class PSSMHCpan
         PSSMlistFilename = args[3];
 
         pssms = PSSMParser.ParsePSSMfileList(PSSMlistFilename);
+        peptides = PSSMParser.ParseFasta(peptidesFilename);
     }
 
-    double score_one_peptide()
+    public double ScoreOnePeptide(String peptide)
     {
         WeightMatrix pssm = pssms.get(al);
 
@@ -156,7 +197,11 @@ class PSSMHCpan
         for (int ch_pos=0; ch_pos<peptide.length(); ch_pos++)
         {
             Map<Character, Double> weightRow = pssm.get(ch_pos);
+            if(weightRow == null) {
+                //do smth ?
+            }
             Double weight = weightRow.get(peptide.charAt(ch_pos));
+            //assert(weight is valid)
             score += weight;
         }
 
@@ -166,19 +211,18 @@ class PSSMHCpan
         return Math.pow(50000, (score_max - score)/score_range);
     }
 
+    public void ScoreAllPeptides()
+    {
+        for (String p : peptides)
+        {
+            double ic50 = ScoreOnePeptide(p);
+            System.out.format("%s %f\n", p, ic50);
+        }
+    }
+    
     public static void main(String[] args) 
     {
         PSSMHCpan app = new PSSMHCpan(args);
-
-        try
-        {
-            PrintWriter writer = new PrintWriter("res.txt", "UTF-8");
-            double ic50 = app.score_one_peptide();
-            writer.format("%s %f\n", peptide, ic50);
-            writer.close();
-        } 
-        catch (IOException e) {
-           // do something
-        }
+        app.ScoreAllPeptides();
     }
 }
