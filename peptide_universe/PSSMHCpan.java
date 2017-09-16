@@ -27,22 +27,26 @@ class AllelePair
 }
 class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
-/*
 class ScoredPeptide
 {
+    ScoredPeptide(String peptide, double ic50) 
+    { 
+        this.peptide = peptide; 
+        this.ic50 = ic50;
+    }
+    
     public String peptide; 
-    public double score; 
+    public double ic50; 
 }
-*/
 
 class PSSMParser
 {
     public static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
     private static String alphabetRegex = "[" + alphabet + "]+";
 
-    public static ArrayList<String> ParseFasta(String filePath)
+    public static ArrayList<ScoredPeptide> ParseFasta(String filePath)
     {
-        ArrayList<String> res = new ArrayList<String>();
+        ArrayList<ScoredPeptide> res = new ArrayList<ScoredPeptide>();
         try
         {
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
@@ -55,14 +59,14 @@ class PSSMParser
                     return res;
                 }
                 
-                String rec = reader.readLine();
-                if (rec.matches(alphabetRegex))
+                String peptide = reader.readLine();
+                if (peptide.matches(alphabetRegex))
                 {
-                    res.add(rec);
+                    res.add(new ScoredPeptide(peptide, -1.0));
                 }
                 else
                 {
-                    System.err.format("Skip wrong Fasta record '%s' in %s\n", rec, filePath);
+                    System.err.format("Skip wrong Fasta record '%s' in %s\n", peptide, filePath);
                 }
             }
         }
@@ -170,7 +174,7 @@ class PSSMHCpan
     private AllelePair al = new AllelePair();
 
     private WeightMatrices pssms = null;
-    private ArrayList<String> peptides = new ArrayList<String>();
+    private ArrayList<ScoredPeptide> peptides = new ArrayList<ScoredPeptide>();
         
     PSSMHCpan(String[] args)
     {
@@ -213,10 +217,10 @@ class PSSMHCpan
 
     public void ScoreAllPeptides()
     {
-        for (String p : peptides)
+        for (ScoredPeptide scPep : peptides)
         {
-            double ic50 = ScoreOnePeptide(p);
-            System.out.format("%s %f\n", p, ic50);
+            scPep.ic50 = ScoreOnePeptide(scPep.peptide);
+            System.out.format("%s %f\n", scPep.peptide, scPep.ic50);
         }
     }
     
