@@ -1,4 +1,4 @@
-//package PSSMHC;
+package org.PSSMHC;
 
 import java.lang.Math;
 import java.util.*;
@@ -163,7 +163,7 @@ class PSSMParser
     }
 }
 
-class PSSMHCpan
+public final class PSSMHCpan
 {
     private static double score_max = 0.8;
     private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
