@@ -1,3 +1,4 @@
 @echo %time%
-@java PSSMHCpan %1 9 HLA-A0201 database\PSSM\pssm_file.list > %2
+@java org.PSSMHC.MainWrapper %1 9 HLA-A0201 database\PSSM\pssm_file.list > %2
+::java -jar C:\BigData\workspace\local_repo\genomics\peptide_universe\PSSMHCpan_maven\target\PSSMHCpan-1.0.jar %1 9 HLA-A0201 database\PSSM\pssm_file.list > %2
 @echo %time%

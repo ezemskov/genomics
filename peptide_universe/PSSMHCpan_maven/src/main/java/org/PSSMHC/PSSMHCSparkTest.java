@@ -11,11 +11,6 @@ import java.util.List;
 class PSSMHCpanSpark extends PSSMHCpan
                      implements Function<String,ScoredPeptide>
 {
-    PSSMHCpanSpark(String[] args)
-    {
-        super(args);
-    }
-
     public ScoredPeptide call(String peptide)
     {
         return new ScoredPeptide(peptide, ScoreOnePeptide(peptide));
@@ -33,7 +28,8 @@ public final class PSSMHCSparkTest
 
         JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
         
-        PSSMHCpanSpark app = new PSSMHCpanSpark(args);        
+        PSSMHCpanSpark app = new PSSMHCpanSpark();
+        app.InitFromCmdline(args);
         int partitions = 2;
 
         JavaRDD<String> peptideRDD = jsc.parallelize(app.peptides2, partitions);

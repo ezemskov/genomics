@@ -4,6 +4,7 @@ import java.lang.Math;
 import java.util.*;
 import java.lang.System;
 import java.lang.String;
+import java.lang.RuntimeException;
 import java.io.*;
 
 class WeightMatrixColumn extends HashMap<Character, Double> {}
@@ -25,6 +26,8 @@ class AllelePair
     public String alName; 
     public int pepLength; 
 }
+
+class WeightMatrixPathMap extends HashMap<AllelePair, String> {}
 class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
 class ScoredPeptide
@@ -46,7 +49,7 @@ class PSSMParser
 
     public static ArrayList<ScoredPeptide> ParseFasta(String filePath)
     {
-        ArrayList<ScoredPeptide> res = new ArrayList<ScoredPeptide>();
+        ArrayList<ScoredPeptide> res = new ArrayList<>();
         try
         {
             BufferedReader reader = new BufferedReader(new FileReader(filePath));
@@ -76,15 +79,15 @@ class PSSMParser
         }        
         return res;
     }
-    
-    
+        
     //filePath is pssm_file.list
-    public static WeightMatrices ParsePSSMfileList(String filePath)
+    //ap is a 'allele name/length' pair
+    public static WeightMatrix FindAndParsePSSM(String pssmListPath, AllelePair ap)
     {
-        WeightMatrices res = new WeightMatrices();
+        WeightMatrix res = null;
         try
         {
-            BufferedReader reader = new BufferedReader(new FileReader(filePath));
+            BufferedReader reader = new BufferedReader(new FileReader(pssmListPath));
             while (reader.ready())
             {
                 String rowStr = reader.readLine();
@@ -94,14 +97,13 @@ class PSSMParser
                     System.err.format("Skip invalid line PSSM list line '%s'\n", rowStr);
                     continue;
                 }
-
-                AllelePair al = new AllelePair();
-                al.alName = row[1];
-                al.pepLength = Integer.parseInt(row[2]);   
-
-                String pssmFilePath = row[0];
-                WeightMatrix pssm  = ParseOnePSSM(pssmFilePath);
-                res.put(al, pssm);
+                
+                if (ap.alName.equals(row[1]) && 
+                    (ap.pepLength == Integer.parseInt(row[2])))
+                {
+                    String pssmFilePath = row[0];
+                    res = ParsePSSM(pssmFilePath);
+                }
             }
         }
         catch (Exception e) 
@@ -112,7 +114,7 @@ class PSSMParser
     }
 
     //filePath is database/PSSM/HLA-xxxxx_N.pssm
-    private static WeightMatrix ParseOnePSSM(String filePath)
+    private static WeightMatrix ParsePSSM(String filePath)
     {
         WeightMatrix res = new WeightMatrix();
         try
@@ -169,50 +171,47 @@ public class PSSMHCpan
     private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
     private static double score_range = score_max - score_min;
     
-    private String peptidesFilename, alleleName, PSSMlistFilename;
-    private int peptideLength;
-    private AllelePair al = new AllelePair();
-
-    private WeightMatrices pssms = null;
+    private WeightMatrix pssm = null;
     public ArrayList<ScoredPeptide> peptides = new ArrayList<ScoredPeptide>();
     public ArrayList<String> peptides2 = new ArrayList<String>();
-        
-    PSSMHCpan(String[] args)
+    
+    public void InitFromCmdline(String[] args)
     {
         if (args.length != 4)
         {
-            System.err.format("Usage : java PSSMHCpan peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
-            System.err.format("Actual args qnty %d\n", args.length);
-            System.exit(1);
+            throw new RuntimeException("Usage : java PSSMHCpan peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
         }
         
-        peptidesFilename = args[0];
-        al.pepLength = Integer.parseInt(args[1]);
-        al.alName = args[2];
-        PSSMlistFilename = args[3];
+        String peptidesFilename = args[0];
+        AllelePair ap = new AllelePair();
+        ap.pepLength = Integer.parseInt(args[1]);
+        ap.alName = args[2];
+        String PSSMlistFilename = args[3];
 
-        pssms = PSSMParser.ParsePSSMfileList(PSSMlistFilename);
+        pssm = PSSMParser.FindAndParsePSSM(PSSMlistFilename, ap);
+
         peptides = PSSMParser.ParseFasta(peptidesFilename);
-        
         for (ScoredPeptide scp : peptides)
         {
             peptides2.add(scp.peptide);
         }
     }
-
+    
     public double ScoreOnePeptide(String peptide)
     {
-        WeightMatrix pssm = pssms.get(al);
-
+        if (pssm == null)
+        {
+            throw new RuntimeException("PSSM is not initialized");
+        }
         double score = 0;
         for (int ch_pos=0; ch_pos<peptide.length(); ch_pos++)
         {
             Map<Character, Double> weightRow = pssm.get(ch_pos);
             if(weightRow == null) {
-                //do smth ?
+                throw new RuntimeException("Invalid PSSM width");
             }
             Double weight = weightRow.get(peptide.charAt(ch_pos));
-            //assert(weight is valid)
+            assert(weight != null); //assumes PSSM is parsed and peptide is validated
             score += weight;
         }
 
@@ -236,7 +235,18 @@ class MainWrapper
 {    
     public static void main(String[] args) 
     {
-        PSSMHCpan app = new PSSMHCpan(args);
-        app.ScoreAllPeptides();
+        try
+        {
+            PSSMHCpan app = new PSSMHCpan();
+            app.InitFromCmdline(args);
+            app.ScoreAllPeptides();
+        }
+        catch (Exception ex)
+        {
+            if (!ex.getMessage().isEmpty())
+            {
+                System.err.print(ex.getMessage());
+            }
+        }
     }
 }
