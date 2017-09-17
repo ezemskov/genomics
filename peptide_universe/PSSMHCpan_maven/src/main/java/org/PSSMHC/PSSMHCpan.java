@@ -243,10 +243,7 @@ class MainWrapper
         }
         catch (Exception ex)
         {
-            if (!ex.getMessage().isEmpty())
-            {
-                System.err.print(ex.getMessage());
-            }
+            System.err.print(ex.getMessage());
         }
     }
 }

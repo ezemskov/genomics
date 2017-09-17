@@ -21,22 +21,28 @@ public final class PSSMHCSparkTest
 {   
     public static void main(String[] args) throws Exception 
     {
-        SparkSession spark = SparkSession
-          .builder()
-          .appName("PSSMHCSparkTest")
-          .getOrCreate();
+        try
+        {
+            SparkSession spark = SparkSession
+                .builder()
+                .appName("PSSMHCSparkTest")
+                .getOrCreate();
 
-        JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
-        
-        PSSMHCpanSpark app = new PSSMHCpanSpark();
-        app.InitFromCmdline(args);
-        int partitions = 2;
+            JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
+            PSSMHCpanSpark app = new PSSMHCpanSpark();
+            app.InitFromCmdline(args);
 
-        JavaRDD<String> peptideRDD = jsc.parallelize(app.peptides2, partitions);
-        JavaRDD<ScoredPeptide> peptideRDD2 = peptideRDD.map(app);
-        
-        peptideRDD2.saveAsTextFile("OutputPSSMHC");
-        
-        spark.stop();
+            int partitions = 2;
+            JavaRDD<String> peptideRDD = jsc.parallelize(app.peptides2, partitions);
+            JavaRDD<ScoredPeptide> peptideRDD2 = peptideRDD.map(app);
+
+            peptideRDD2.saveAsTextFile("OutputPSSMHC");
+
+            spark.stop();
+        }
+        catch (Exception ex)
+        {
+            System.err.print(ex.getMessage());
+        }
     }
 }
