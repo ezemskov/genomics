@@ -1,5 +1,6 @@
 package org.PSSMHC;
 
+import java.io.Serializable;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -9,7 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 class PSSMHCpanSpark extends PSSMHCpan
-                     implements Function<String,ScoredPeptide>
+                     implements Serializable,
+                     Function<String,ScoredPeptide>
 {
     public ScoredPeptide call(String peptide)
     {
@@ -33,7 +35,7 @@ public final class PSSMHCSparkTest
             app.InitFromCmdline(args);
 
             int partitions = 2;
-            JavaRDD<String> peptideRDD = jsc.parallelize(app.peptides2, partitions);
+            JavaRDD<String> peptideRDD = jsc.parallelize(app.peptides, partitions);
             JavaRDD<ScoredPeptide> peptideRDD2 = peptideRDD.map(app);
 
             peptideRDD2.saveAsTextFile("OutputPSSMHC");
@@ -42,7 +44,8 @@ public final class PSSMHCSparkTest
         }
         catch (Exception ex)
         {
-            System.err.print(ex.getMessage());
+            System.err.print(ex + "\n");
+            ex.printStackTrace();
         }
     }
 }

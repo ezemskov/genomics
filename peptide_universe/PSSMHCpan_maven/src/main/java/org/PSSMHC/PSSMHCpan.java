@@ -7,8 +7,8 @@ import java.lang.String;
 import java.lang.RuntimeException;
 import java.io.*;
 
-class WeightMatrixColumn extends HashMap<Character, Double> {}
-class WeightMatrix extends ArrayList<WeightMatrixColumn> {}
+class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable {}
+class WeightMatrix extends ArrayList<WeightMatrixColumn> implements Serializable {}
 
 class AllelePair
 {
@@ -38,6 +38,11 @@ class ScoredPeptide
         this.ic50 = ic50;
     }
     
+    public String toString()
+    {
+        return new String().format("%s %f", peptide, ic50);
+    }
+        
     public String peptide; 
     public double ic50; 
 }
@@ -165,15 +170,14 @@ class PSSMParser
     }
 }
 
-public class PSSMHCpan
+public class PSSMHCpan implements Serializable
 {
     private static double score_max = 0.8;
     private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
     private static double score_range = score_max - score_min;
     
     private WeightMatrix pssm = null;
-    public ArrayList<ScoredPeptide> peptides = new ArrayList<ScoredPeptide>();
-    public ArrayList<String> peptides2 = new ArrayList<String>();
+    public transient ArrayList<String> peptides = new ArrayList<String>();
     
     public void InitFromCmdline(String[] args)
     {
@@ -190,10 +194,10 @@ public class PSSMHCpan
 
         pssm = PSSMParser.FindAndParsePSSM(PSSMlistFilename, ap);
 
-        peptides = PSSMParser.ParseFasta(peptidesFilename);
-        for (ScoredPeptide scp : peptides)
+        ArrayList<ScoredPeptide> scPeptides = PSSMParser.ParseFasta(peptidesFilename);
+        for (ScoredPeptide scp : scPeptides)
         {
-            peptides2.add(scp.peptide);
+            peptides.add(scp.peptide);
         }
     }
     
@@ -223,10 +227,10 @@ public class PSSMHCpan
 
     public void ScoreAllPeptides()
     {
-        for (ScoredPeptide scPep : peptides)
+        for (String pep : peptides)
         {
-            scPep.ic50 = ScoreOnePeptide(scPep.peptide);
-            System.out.format("%s %f\n", scPep.peptide, scPep.ic50);
+            double ic50 = ScoreOnePeptide(pep);
+            System.out.println(new ScoredPeptide(pep, ic50));
         }
     }
 }
