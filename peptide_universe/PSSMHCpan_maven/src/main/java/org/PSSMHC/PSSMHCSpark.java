@@ -4,11 +4,12 @@ import java.io.Serializable;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-//import org.apache.spark.sql.SparkSession;
-//import org.apache.spark.sql.SQLContext;
-//import org.apache.spark.sql.Dataset;
-//import org.apache.spark.sql.Row;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.api.java.function.MapFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,11 +25,11 @@ class PSSMHCpanSparkFunc extends PSSMHCpan
 }
 
 class PeptideGenFunc implements Serializable, 
-                     Function<Long, String>
+                     MapFunction<Row, String>
 {
-    public String call(Long idx)
+    public String call(Row idx)
     {
-        return PeptideGen.Generate(idx.longValue());
+        return PeptideGen.Generate(idx.getLong(0));
     }
 }
 
@@ -48,21 +49,17 @@ final public class PSSMHCSpark
             PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
             pssmhc.InitFromCmdline(args);
 
-            int partitions = 2;
+            int partitions = 3;
             PeptideGenFunc gen = new PeptideGenFunc();
-            //sqlc.range((long)1010);
-            //sqlc.range(1000, 1010);
-            //sqlc.range(1000, 1010).map(gen);
+            sqlc.range(1000, 1050, 1, partitions)
+                    .map(gen, Encoders.STRING())
+                    .toJavaRDD()
+                    .map(pssmhc)
+                    .saveAsTextFile("OutputPSSMHC_Dataset");
             
-            
-            //Dataset<String> peptideDataset = peptideDS.map(gen);
-            //Dataset<ScoredPeptide> scPepDataset = peptideDataset.map(pssmhc);
-
-            //peptideDataset.toJavaRDD().saveAsTextFile("OutputPSSMHC_Dataset");
-            
-            //JavaRDD<String> peptideRDD = jsc.parallelize(pssmhc.peptides, partitions);
-            //JavaRDD<ScoredPeptide> peptideRDD2 = peptideRDD.map(pssmhc);
-            //peptideRDD2.saveAsTextFile("OutputPSSMHC_RDD");
+            jsc.parallelize(pssmhc.peptides, partitions)
+                    .map(pssmhc)
+                    .saveAsTextFile("OutputPSSMHC");
 
             spark.stop();
         }
