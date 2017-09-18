@@ -4,6 +4,7 @@ import java.lang.Math;
 import java.util.*;
 import java.lang.System;
 import java.lang.String;
+import java.lang.StringBuffer;
 import java.lang.RuntimeException;
 import java.io.*;
 
@@ -47,10 +48,15 @@ class ScoredPeptide
     public double ic50; 
 }
 
-class PSSMParser
+class Consts
 {
     public static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
-    private static String alphabetRegex = "[" + alphabet + "]+";
+    public static int aLen = alphabet.length();
+}
+
+class PSSMParser
+{
+    private static String alphabetRegex = "[" + Consts.alphabet + "]+";
 
     public static ArrayList<ScoredPeptide> ParseFasta(String filePath)
     {
@@ -140,7 +146,7 @@ class PSSMParser
             }
 
             int iRow = 0;
-            while (reader.ready() && (iRow < alphabet.length()))
+                while (reader.ready() && (iRow < Consts.aLen))
             {
                 String[] row = reader.readLine().split("\t");
                 if (row.length > colsQnty)
@@ -151,13 +157,13 @@ class PSSMParser
 
                 for (int iCol=0; iCol<colsQnty; iCol++)
                 {
-                    res.get(iCol).put(new Character(alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
+                    res.get(iCol).put(new Character(Consts.alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
                 }
 
                 iRow +=1;
             }
 
-            if (iRow != alphabet.length())
+            if (iRow != Consts.aLen)
             {
                 System.err.format("Invalid PSSM of %d rows\n", iRow);
             }
@@ -183,7 +189,7 @@ public class PSSMHCpan implements Serializable
     {
         if (args.length != 4)
         {
-            throw new RuntimeException("Usage : java PSSMHCpan peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
+            throw new RuntimeException("Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
         }
         
         String peptidesFilename = args[0];
@@ -235,7 +241,7 @@ public class PSSMHCpan implements Serializable
     }
 }
 
-class MainWrapper
+final class PSSMHCpanJava
 {    
     public static void main(String[] args) 
     {
