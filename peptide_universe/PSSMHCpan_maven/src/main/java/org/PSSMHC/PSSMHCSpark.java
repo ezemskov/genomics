@@ -10,6 +10,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Encoders;
+import org.apache.spark.storage.StorageLevel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,12 +71,22 @@ final public class PSSMHCSpark
 
             Range idx = ParseCmdline(args, nextArgIdx);
             
+            int partitionsQnty = 4;
             PeptideGenFunc gen = new PeptideGenFunc();
-            sqlc.range(idx.start, idx.end)
-                    .map(gen, Encoders.STRING())
-                    .toJavaRDD()
-                    .map(pssmhc)
-                    .saveAsTextFile("OutputPSSMHC");
+            JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, partitionsQnty)
+                        .map(gen, Encoders.STRING())
+                        .toJavaRDD()
+                        .map(pssmhc);
+            //scPepts.persist(StorageLevel.MEMORY_AND_DISK());
+            
+            JavaRDD<ScoredPeptide> binderPepts = scPepts.filter(scPep -> (scPep.ic50 < 1500.0));
+            binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
+            
+            binderPepts.saveAsTextFile("OutputPSSMHC");
+            
+            System.out.format("Found %d binder peptides in total of %d\n", 
+                binderPepts.count(), 
+                (idx.end-idx.start));
             
             spark.stop();
         }
@@ -86,3 +97,4 @@ final public class PSSMHCSpark
         }
     }
 }
+;
