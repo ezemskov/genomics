@@ -185,9 +185,9 @@ public class PSSMHCpan implements Serializable
     private WeightMatrix pssm = null;
     public transient ArrayList<String> peptides = new ArrayList<String>();
     
-    public void InitFromCmdline(String[] args)
+    public int InitFromCmdline(String[] args)
     {
-        if (args.length != 4)
+        if (args.length < 4)
         {
             throw new RuntimeException("Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
         }
@@ -205,6 +205,8 @@ public class PSSMHCpan implements Serializable
         {
             peptides.add(scp.peptide);
         }
+        
+        return 4;
     }
     
     public double ScoreOnePeptide(String peptide)
