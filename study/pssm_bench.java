@@ -61,12 +61,12 @@ class PSSMbench
         {
             PrintWriter writer = new PrintWriter("res.txt", "UTF-8");
 
-            for (int i=0; i<500000; i++)
+            for (int i=0; i<10000000; i++)
             {
                 double ic50 = b.score_one_peptide();
             }
 
-            for (int i=0; i<50000; i++)
+            for (int i=0; i<1000000; i++)
             {
                 writer.format("%s %f\n", peptide, 5.5555);
             }
