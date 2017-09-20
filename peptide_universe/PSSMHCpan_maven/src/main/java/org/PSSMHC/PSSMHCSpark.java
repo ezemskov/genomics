@@ -2,6 +2,7 @@ package org.PSSMHC;
 
 import java.io.Serializable;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -22,6 +23,16 @@ class PSSMHCpanSparkFunc extends PSSMHCpan
     public ScoredPeptide call(String peptide)
     {
         return new ScoredPeptide(peptide, ScoreOnePeptide(peptide));
+    }
+}
+
+class PeptideBloomFilterFunc extends PeptideBloomFilter
+                        implements Serializable,
+                        VoidFunction<ScoredPeptide>
+{
+    public void call(ScoredPeptide scPep)
+    {
+        Add(scPep.peptide);
     }
 }
 
@@ -73,6 +84,8 @@ final public class PSSMHCSpark
 
             Range idx = ParseCmdline(args, nextArgIdx);
             
+            PeptideBloomFilterFunc bloom = new PeptideBloomFilterFunc();
+                
             PeptideGenFunc gen = new PeptideGenFunc();
             JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, idx.partitions)
                         .map(gen, Encoders.STRING())
@@ -81,8 +94,11 @@ final public class PSSMHCSpark
             //scPepts.persist(StorageLevel.MEMORY_AND_DISK());
             
             JavaRDD<ScoredPeptide> binderPepts = scPepts.filter(scPep -> (scPep.ic50 < 1500.0));
-            binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
+            //binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
+            //binderPepts.foreach(bloom);
             binderPepts.saveAsTextFile("OutputPSSMHC");
+            
+            //bloom.Save("OutputPSSMHC/bloom_filter");
             
             //System.out.format("Found %d binder peptides in total of %d\n", binderPepts.count(), (idx.end-idx.start));
             
