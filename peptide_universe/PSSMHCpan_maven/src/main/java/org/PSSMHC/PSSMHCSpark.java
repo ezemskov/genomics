@@ -40,18 +40,20 @@ final public class PSSMHCSpark
     {
         public long start;
         public long end;
+        public int partitions;
     }
     
     public static Range ParseCmdline(String[] args, int firstArgIdx)
     {
-        if (args.length < firstArgIdx+2)
+        if (args.length < firstArgIdx+3)
         {
-            throw new RuntimeException("Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list [peptide idx start] [peptide qnty[\n");
+            throw new RuntimeException("Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list [peptides idx start] [peptides qnty] [partitions]\n");
         }
 
         Range res = new Range();
         res.start =           Long.parseUnsignedLong(args[firstArgIdx]);
-        res.end = res.start + Long.parseUnsignedLong(args[firstArgIdx+1]);            
+        res.end = res.start + Long.parseUnsignedLong(args[firstArgIdx+1]);    
+        res.partitions =          Integer.parseUnsignedInt(args[firstArgIdx+2]);
         return res;
     }
     
@@ -71,9 +73,8 @@ final public class PSSMHCSpark
 
             Range idx = ParseCmdline(args, nextArgIdx);
             
-            int partitionsQnty = 4;
             PeptideGenFunc gen = new PeptideGenFunc();
-            JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, partitionsQnty)
+            JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, idx.partitions)
                         .map(gen, Encoders.STRING())
                         .toJavaRDD()
                         .map(pssmhc);
@@ -81,12 +82,9 @@ final public class PSSMHCSpark
             
             JavaRDD<ScoredPeptide> binderPepts = scPepts.filter(scPep -> (scPep.ic50 < 1500.0));
             binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
-            
             binderPepts.saveAsTextFile("OutputPSSMHC");
             
-            System.out.format("Found %d binder peptides in total of %d\n", 
-                binderPepts.count(), 
-                (idx.end-idx.start));
+            //System.out.format("Found %d binder peptides in total of %d\n", binderPepts.count(), (idx.end-idx.start));
             
             spark.stop();
         }

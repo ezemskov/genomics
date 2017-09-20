@@ -41,7 +41,7 @@ class ScoredPeptide
     
     public String toString()
     {
-        return new String().format("%s %f", peptide, ic50);
+        return new String().format("%s %.0f", peptide, ic50);
     }
         
     public String peptide; 
@@ -119,7 +119,7 @@ class PSSMParser
         }
         catch (Exception e) 
         {
-            System.err.format("Error reading %s : %s\n", filePath, e.getMessage());
+            System.err.format("Error reading %s : %s\n", pssmListPath, e.getMessage());
         }        
         return res;
     }
