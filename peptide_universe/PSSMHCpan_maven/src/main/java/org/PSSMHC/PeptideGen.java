@@ -1,5 +1,7 @@
 package org.PSSMHC;
 
+import java.lang.StringBuffer;
+
 public class PeptideGen
 {
     private static int pepLen = 9;

@@ -4,19 +4,11 @@ import java.lang.Math;
 import java.util.*;
 import java.lang.System;
 import java.lang.String;
-import java.lang.StringBuffer;
 import java.lang.RuntimeException;
 
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.Serializable;
-
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-import com.google.common.hash.Funnel;
-import java.nio.charset.Charset;
 
 class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable {}
 class WeightMatrix extends ArrayList<WeightMatrixColumn> implements Serializable {}
@@ -183,61 +175,6 @@ class PSSMParser
             System.err.format("Error reading %s : %s\n", filePath, e.getMessage());
         }        
         return res;
-    }
-}
-
-class PeptideBloomFilter
-{
-    private BloomFilter<CharSequence> filter = null;
-    private static Funnel<CharSequence> funnel = Funnels.stringFunnel(Charset.defaultCharset()); //todo : 20-char charset ?
-    private static long size = (long)10E9;
-    private static double fpp = 0.01;
-    
-    PeptideBloomFilter()
-    {
-        //filter = BloomFilter.create(funnel, size, fpp);
-        //filter = BloomFilter.create(Funnels.integerFunnel(), size, fpp);
-    }
-
-    PeptideBloomFilter(String filename)
-    {
-        /*
-        try
-        {
-            //FileInputStream f = new FileInputStream(filename);
-            //filter = BloomFilter.readFrom(f, funnel);
-        }
-        catch (IOException e) 
-        {
-           System.err.format("Error reading Bloom filter from %s : %s", filename, e);
-        }
-*/
-    }
-    
-    public boolean Save(String filename)
-    {
-        try
-        {
-            FileWriter f = new FileWriter(filename);
-            f.write(filter.toString());
-            f.close();
-            return true;
-        }
-        catch (IOException e) 
-        {
-           System.err.format("Error writing to %s : %s", filename, e);
-           return false;
-        }        
-    }
-
-    public void Add(String peptide)
-    {
-        filter.put(peptide);
-    }
-    
-    public boolean MightContain(String peptide)
-    {
-        return filter.mightContain(peptide);
     }
 }
 
