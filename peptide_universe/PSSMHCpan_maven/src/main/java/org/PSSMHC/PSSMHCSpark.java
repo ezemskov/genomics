@@ -12,6 +12,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.storage.StorageLevel;
+import org.apache.hadoop.io.compress.GzipCodec;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +77,7 @@ final public class PSSMHCSpark
                 .builder()
                 .appName("PSSMHCSpark")
                 .getOrCreate();
-
+            
             JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
             SQLContext sqlc = new SQLContext(jsc);
             PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
@@ -84,7 +85,7 @@ final public class PSSMHCSpark
 
             Range idx = ParseCmdline(args, nextArgIdx);
             
-            PeptideBloomFilterFunc bloom = new PeptideBloomFilterFunc();
+            //PeptideBloomFilterFunc bloom = new PeptideBloomFilterFunc();
                 
             PeptideGenFunc gen = new PeptideGenFunc();
             JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, idx.partitions)
@@ -96,7 +97,7 @@ final public class PSSMHCSpark
             JavaRDD<ScoredPeptide> binderPepts = scPepts.filter(scPep -> (scPep.ic50 < 1500.0));
             //binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
             //binderPepts.foreach(bloom);
-            binderPepts.saveAsTextFile("OutputPSSMHC");
+            binderPepts.saveAsTextFile("OutputPSSMHC", GzipCodec.class);
             
             //bloom.Save("OutputPSSMHC/bloom_filter");
             
