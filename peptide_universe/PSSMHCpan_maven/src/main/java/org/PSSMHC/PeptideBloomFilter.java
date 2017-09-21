@@ -6,21 +6,19 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.Exception;
 
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
-import com.google.common.hash.Funnel;
+import org.apache.spark.util.sketch.BloomFilter;
+
 import java.nio.charset.Charset;
 
 class PeptideBloomFilter
 {
-    private BloomFilter<CharSequence> filter = null;
-    private static Funnel<CharSequence> funnel = Funnels.stringFunnel(Charset.defaultCharset()); //todo : 20-char charset ?
-    private static int size = Integer.MAX_VALUE;
+    private BloomFilter filter = null;
+    private static long size = (long)1E8;
     private static double fpp = 0.01;
     
     PeptideBloomFilter()
     {
-        filter = BloomFilter.create(funnel, size, fpp);
+        filter = BloomFilter.create(size, fpp);
     }
 
     PeptideBloomFilter(String filename)
@@ -29,7 +27,7 @@ class PeptideBloomFilter
         {
             FileInputStream fs = new FileInputStream(filename);
             ObjectInputStream objs = new ObjectInputStream(fs);
-            filter = (BloomFilter<CharSequence>)objs.readObject();
+            filter = (BloomFilter)objs.readObject();
             fs.close();
         }
         catch (Exception e) 
@@ -57,11 +55,11 @@ class PeptideBloomFilter
 
     public void Add(String peptide)
     {
-        filter.put(peptide);
+        filter.putString(peptide);
     }
     
     public boolean MightContain(String peptide)
     {
-        return filter.mightContain(peptide);
+        return filter.mightContainString(peptide);
     }
 }
