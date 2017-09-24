@@ -33,7 +33,7 @@ class AllelePair
 class WeightMatrixPathMap extends HashMap<AllelePair, String> {}
 class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
-class ScoredPeptide
+class ScoredPeptide implements Serializable
 {
     ScoredPeptide(String peptide, double ic50) 
     { 

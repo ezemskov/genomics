@@ -85,7 +85,6 @@ final public class PSSMHCSpark
 
             Range idx = ParseCmdline(args, nextArgIdx);
             
-            PeptideBloomFilterFunc bloom = new PeptideBloomFilterFunc();
             PeptideGenFunc gen = new PeptideGenFunc();
             JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, idx.partitions)
                         .map(gen, Encoders.STRING())
@@ -94,11 +93,8 @@ final public class PSSMHCSpark
             //scPepts.persist(StorageLevel.MEMORY_AND_DISK());
             
             JavaRDD<ScoredPeptide> binderPepts = scPepts.filter(scPep -> (scPep.ic50 < 1500.0));
-            //binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
-            binderPepts.foreach(bloom);
+            binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
             binderPepts.saveAsTextFile("OutputPSSMHC", GzipCodec.class);
-            
-            bloom.Save("OutputPSSMHC/bloom_filter");
             
             System.out.format("Found %d binder peptides in total of %d\n", binderPepts.count(), (idx.end-idx.start));
             
