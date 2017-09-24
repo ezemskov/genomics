@@ -59,7 +59,7 @@ final public class PSSMHCSpark
     {
         if (args.length < firstArgIdx+3)
         {
-            throw new RuntimeException("Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list [peptides idx start] [peptides qnty] [partitions]\n");
+            throw new RuntimeException(PSSMHCpan.CmdlineHelpStr);
         }
 
         Range res = new Range();
@@ -102,8 +102,7 @@ final public class PSSMHCSpark
         }
         catch (Exception ex)
         {
-            System.err.print(ex + "\n");
-            ex.printStackTrace();
+            System.err.print(ex.getMessage() + "\n");
         }
     }
 }

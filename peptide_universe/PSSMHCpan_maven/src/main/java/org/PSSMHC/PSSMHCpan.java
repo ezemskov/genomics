@@ -178,37 +178,34 @@ class PSSMParser
     }
 }
 
-public class PSSMHCpan implements Serializable
+class PSSMHCpan implements Serializable
 {
+    public static String CmdlineHelpStr = "Usage : "
+        + "spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://<IP>:7077 /path/to/PSSMHCpan-1.0.jar <peptide_length> <allele_name> path/to/pssm_file.list <peptide start idx> <peptide qnty> <partitions>\n"
+        + "e.g. spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://192.168.56.1:7077 ./PSSMHCpan-1.0.jar 9 HLA-A0201 database/PSSM/pssm_file.list 1 1000 4";
+
+    
     private static double score_max = 0.8;
     private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
     private static double score_range = score_max - score_min;
     
-    private WeightMatrix pssm = null;
-    public transient ArrayList<String> peptides = new ArrayList<String>();
+    protected WeightMatrix pssm = null;
     
     public int InitFromCmdline(String[] args)
     {
-        if (args.length < 4)
+        if (args.length < 3)
         {
-            throw new RuntimeException("Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n");
+            throw new RuntimeException(CmdlineHelpStr);
         }
         
-        String peptidesFilename = args[0];
         AllelePair ap = new AllelePair();
-        ap.pepLength = Integer.parseInt(args[1]);
-        ap.alName = args[2];
-        String PSSMlistFilename = args[3];
+        ap.pepLength = Integer.parseInt(args[0]);
+        ap.alName = args[1];
+        String PSSMlistFilename = args[2];
 
         pssm = PSSMParser.FindAndParsePSSM(PSSMlistFilename, ap);
-
-        ArrayList<ScoredPeptide> scPeptides = PSSMParser.ParseFasta(peptidesFilename);
-        for (ScoredPeptide scp : scPeptides)
-        {
-            peptides.add(scp.peptide);
-        }
         
-        return 4;
+        return 3;
     }
     
     public double ScoreOnePeptide(String peptide)
@@ -234,6 +231,37 @@ public class PSSMHCpan implements Serializable
 
         return Math.pow(50000, (score_max - score)/score_range);
     }
+}
+
+class PSSMHCpanFasta extends PSSMHCpan
+{
+    public static String CmdlineHelpStr = "Usage : java org.PSSMHC.PSSMHCpanJava peptides_list.fa <peptide_length> <allele name> database/PSSM/pssm_file.list\n";
+
+    public transient ArrayList<String> peptides = new ArrayList<String>();
+
+    public int InitFromCmdline(String[] args)
+    {
+        if (args.length < 4)
+        {
+            throw new RuntimeException(CmdlineHelpStr);
+        }
+        
+        String peptidesFilename = args[0];
+        AllelePair ap = new AllelePair();
+        ap.pepLength = Integer.parseInt(args[1]);
+        ap.alName = args[2];
+        String PSSMlistFilename = args[3];
+
+        pssm = PSSMParser.FindAndParsePSSM(PSSMlistFilename, ap);
+
+        ArrayList<ScoredPeptide> scPeptides = PSSMParser.ParseFasta(peptidesFilename);
+        for (ScoredPeptide scp : scPeptides)
+        {
+            peptides.add(scp.peptide);
+        }
+        
+        return 4;
+    }
 
     public void ScoreAllPeptides()
     {
@@ -251,13 +279,13 @@ final class PSSMHCpanJava
     {
         try
         {
-            PSSMHCpan app = new PSSMHCpan();
+            PSSMHCpanFasta app = new PSSMHCpanFasta();
             app.InitFromCmdline(args);
             app.ScoreAllPeptides();
         }
         catch (Exception ex)
         {
-            System.err.print(ex.getMessage());
+            System.err.print(ex.getMessage() + "\n");
         }
     }
 }
