@@ -1,6 +1,7 @@
 package org.PSSMHC;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.MapFunction;
@@ -8,14 +9,10 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.hadoop.io.compress.GzipCodec;
-
-import java.util.ArrayList;
-import java.util.List;
 
 class PSSMHCpanSparkFunc extends PSSMHCpan
                         implements Serializable,
@@ -46,29 +43,50 @@ class PeptideGenFunc implements Serializable,
     }
 }
 
-final public class PSSMHCSpark
+class PSSMHCSparkCmdlineConfig
 {
-    public static class Range
-    {
-        public long start;
-        public long end;
-        public int partitions;
-    }
-    
-    public static Range ParseCmdline(String[] args, int firstArgIdx)
+    public long start;
+    public long end;
+    public int partitions;
+        
+    public PSSMHCSparkCmdlineConfig(String[] args, int firstArgIdx)
     {
         if (args.length < firstArgIdx+3)
         {
             throw new RuntimeException(PSSMHCpan.CmdlineHelpStr);
         }
 
-        Range res = new Range();
-        res.start =           Long.parseUnsignedLong(args[firstArgIdx]);
-        res.end = res.start + Long.parseUnsignedLong(args[firstArgIdx+1]);    
-        res.partitions =          Integer.parseUnsignedInt(args[firstArgIdx+2]);
-        return res;
+        start =       ParseLongWithSuffix(args[firstArgIdx]);
+        end = start + ParseLongWithSuffix(args[firstArgIdx+1]);    
+        partitions =  Integer.parseUnsignedInt(args[firstArgIdx+2]);
     }
-    
+
+    private static long ParseLongWithSuffix(String val)
+    {
+        int suffixPos = val.length()-1;
+        Character suffix = val.toUpperCase().charAt(suffixPos);
+        Long multiplier = suffixes.get(suffix);
+        if ((val.length() < 2) || (multiplier == null))
+        {
+            return Long.parseUnsignedLong(val);
+        }
+        
+        return multiplier * Long.parseUnsignedLong(val.substring(0, suffixPos));
+    }
+
+    private static final HashMap<Character, Long> suffixes;
+    static
+    {
+        suffixes = new HashMap<>();
+        suffixes.put('K', (long)1E3);
+        suffixes.put('M', (long)1E6);
+        suffixes.put('G', (long)1E9);
+        suffixes.put('T', (long)1E12);
+    }
+}
+
+final public class PSSMHCSpark
+{
     public static void main(String[] args) throws Exception 
     {
         try
@@ -83,10 +101,10 @@ final public class PSSMHCSpark
             PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
             int nextArgIdx = pssmhc.InitFromCmdline(args);
 
-            Range idx = ParseCmdline(args, nextArgIdx);
+            PSSMHCSparkCmdlineConfig cfg = new PSSMHCSparkCmdlineConfig(args, nextArgIdx);
             
             PeptideGenFunc gen = new PeptideGenFunc();
-            JavaRDD<ScoredPeptide> scPepts = sqlc.range(idx.start, idx.end, 1, idx.partitions)
+            JavaRDD<ScoredPeptide> scPepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
                         .map(gen, Encoders.STRING())
                         .toJavaRDD()
                         .map(pssmhc);
@@ -96,13 +114,13 @@ final public class PSSMHCSpark
             binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
             binderPepts.saveAsTextFile("OutputPSSMHC", GzipCodec.class);
             
-            System.out.format("Found %d binder peptides in total of %d\n", binderPepts.count(), (idx.end-idx.start));
+            System.out.format("Found %d binder peptides in total of %d\n", binderPepts.count(), (cfg.end-cfg.start));
             
             spark.stop();
         }
         catch (Exception ex)
         {
-            System.err.print(ex.getMessage() + "\n");
+            System.err.print(ex.toString() + "\n");
         }
     }
 }
