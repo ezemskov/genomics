@@ -4,7 +4,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.Exception;
+import java.util.ArrayList;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import org.apache.spark.util.sketch.BloomFilter;
 
@@ -61,5 +65,49 @@ class PeptideBloomFilter
     public boolean MightContain(String peptide)
     {
         return filter.mightContainString(peptide);
+    }
+}
+
+    final class PeptideBloomTest
+{
+    private static ArrayList<String> ParsePeptideResFile(String filename) throws FileNotFoundException, IOException
+    {
+        ArrayList<String> res = new ArrayList<String>();
+        BufferedReader reader = new BufferedReader(new FileReader(filename));
+        while (reader.ready())
+        {
+            String rowStr = reader.readLine();
+            res.add(rowStr.split(",")[0]);
+        }
+        
+        return res;
+    }
+        
+    public static void main(String[] args) 
+    {
+        try
+        {
+            if (args.length < 1)
+            {
+                throw new RuntimeException("Usage : java org.PSSMHC.PeptideBloomTest bloom_filter peptides_list");
+            }
+
+            PeptideBloomFilter bloom = new PeptideBloomFilter(args[0]);
+            
+            int count = 0;
+            ArrayList<String> peptides = ParsePeptideResFile(args[1]);
+            for (String p : peptides)
+            {
+                if (bloom.MightContain(p))
+                {
+                    count += 1;
+                }
+            }
+            System.out.format("Bloom filter returns true for %d of %d peptides\n", count, peptides.size());
+        }
+        catch (Exception e) 
+        {
+            System.err.format("Error reading %s\n", e.getMessage());
+        }        
     }
 }
