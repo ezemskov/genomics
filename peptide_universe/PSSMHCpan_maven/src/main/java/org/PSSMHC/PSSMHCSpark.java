@@ -12,7 +12,13 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.storage.StorageLevel;
+import org.apache.spark.SparkConf; 
 import org.apache.hadoop.io.compress.GzipCodec;
+
+import org.apache.spark.serializer.KryoRegistrator; 
+import com.esotericsoftware.kryo.Kryo; 
+import com.esotericsoftware.kryo.serializers.FieldSerializer; 
+
 
 class PSSMHCpanSparkFunc extends PSSMHCpan
                         implements Serializable,
@@ -40,6 +46,18 @@ class PeptideGenFunc implements Serializable,
     public String call(Row idx)
     {
         return PeptideGen.Generate(idx.getLong(0));
+    }
+}
+
+class PeptideGenAndScoreFunc extends PSSMHCpan
+                             implements Serializable, 
+                             MapFunction<Row, ScoredPeptide>
+{
+    public ScoredPeptide call(Row idx)
+    {
+        String peptide = PeptideGen.Generate(idx.getLong(0));
+        double ic50 = ScoreOnePeptide(peptide);
+        return (ic50 < 1500.0) ? new ScoredPeptide(peptide, ic50) : null;
     }
 }
 
@@ -93,39 +111,39 @@ class PSSMHCSparkCmdlineConfig
 
 final public class PSSMHCSpark
 {
+    public static class ScPepRegistrator implements KryoRegistrator 
+    { 
+        public void registerClasses(Kryo kryo) 
+        { 
+          kryo.register(ScoredPeptide.class, new FieldSerializer(kryo, ScoredPeptide.class)); 
+        } 
+    } 
+    
+    
     public static void main(String[] args) throws Exception 
     {
         try
         {
-            SparkSession spark = SparkSession
-                .builder()
-                .appName("PSSMHCSpark")
-                .getOrCreate();
+            SparkConf spconf = new SparkConf()
+                .setAppName("PSSMHCSpark"); 
             
-            JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
+            spconf.set("spark.kryo.registrator", ScPepRegistrator.class.getName()); 
+            JavaSparkContext jsc = new JavaSparkContext(spconf);
             SQLContext sqlc = new SQLContext(jsc);
-            PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
-            int nextArgIdx = pssmhc.InitFromCmdline(args);
-
+            
+            PeptideGenAndScoreFunc genPssmhc = new PeptideGenAndScoreFunc();
+            int nextArgIdx = genPssmhc.InitFromCmdline(args);
             PSSMHCSparkCmdlineConfig cfg = new PSSMHCSparkCmdlineConfig(args, nextArgIdx);
             
-            PeptideGenFunc gen = new PeptideGenFunc();
-            JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
-                        .map(gen, Encoders.STRING())
-                        .toJavaRDD();
+            JavaRDD<ScoredPeptide> binderPepts = 
+                        sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
+                        .map(genPssmhc, Encoders.javaSerialization(ScoredPeptide.class))
+                        .toJavaRDD()
+                        .filter(scPep -> (scPep != null));
             
-            if (cfg.doSrcPersistCount)
-            {
-                pepts.persist(StorageLevel.MEMORY_AND_DISK());
-                System.out.format("Generated %d peptides\n", pepts.count());
-            }
-
-            JavaRDD<ScoredPeptide> scPepts = pepts.map(pssmhc);
-            JavaRDD<ScoredPeptide> binderPepts = scPepts.filter(scPep -> (scPep.ic50 < 1500.0));
-
             if (cfg.doBinderPersist)
             {
-                binderPepts.persist(StorageLevel.MEMORY_AND_DISK());
+                binderPepts.persist(StorageLevel.MEMORY_AND_DISK_SER());
             }
             
             if (cfg.doBinderStore)
@@ -133,10 +151,8 @@ final public class PSSMHCSpark
                 binderPepts.saveAsTextFile("OutputPSSMHC", GzipCodec.class);
             }
             
-            long binderCount    = cfg.doBinderCount ? binderPepts.count() : -1;
+            long binderCount = cfg.doBinderCount ? binderPepts.count() : -1;
             System.out.format("Found %d binder peptides in total of %d\n", binderCount, (cfg.end-cfg.start));
-            
-            spark.stop();
         }
         catch (Exception ex)
         {
