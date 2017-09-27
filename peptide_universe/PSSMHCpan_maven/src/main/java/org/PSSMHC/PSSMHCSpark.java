@@ -7,7 +7,6 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Encoders;
@@ -66,7 +65,7 @@ class PSSMHCSparkCmdlineConfig
     public long start;
     public long end;
     public int partitions;
-    public boolean doSrcPersistCount, doBinderPersist, doBinderStore, doBinderCount;
+    public boolean doGenAndScore, doBinderPersist, doBinderStore, doBinderCount;
         
     public PSSMHCSparkCmdlineConfig(String[] args, int firstArgIdx)
     {
@@ -79,7 +78,7 @@ class PSSMHCSparkCmdlineConfig
         end = start + ParseLongWithSuffix(args[firstArgIdx+1]);    
         partitions =  Integer.parseUnsignedInt(args[firstArgIdx+2]);
 
-        doSrcPersistCount = (Integer.parseInt(args[firstArgIdx+3]) == 1);
+        doGenAndScore     = (Integer.parseInt(args[firstArgIdx+3]) == 1);
         doBinderPersist   = (Integer.parseInt(args[firstArgIdx+4]) == 1);
         doBinderStore     = (Integer.parseInt(args[firstArgIdx+5]) == 1);
         doBinderCount     = (Integer.parseInt(args[firstArgIdx+6]) == 1);
@@ -134,13 +133,30 @@ final public class PSSMHCSpark
             PeptideGenAndScoreFunc genPssmhc = new PeptideGenAndScoreFunc();
             int nextArgIdx = genPssmhc.InitFromCmdline(args);
             PSSMHCSparkCmdlineConfig cfg = new PSSMHCSparkCmdlineConfig(args, nextArgIdx);
+
+
+            PeptideGenFunc gen = new PeptideGenFunc();
+            PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
+            pssmhc.InitFromCmdline(args);
+
             
-            JavaRDD<ScoredPeptide> binderPepts = 
-                        sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
-                        .map(genPssmhc, Encoders.javaSerialization(ScoredPeptide.class))
+            JavaRDD<ScoredPeptide> binderPepts;
+            if (cfg.doGenAndScore)
+            { 
+                binderPepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
+                        .map(genPssmhc, Encoders.kryo(ScoredPeptide.class))
                         .toJavaRDD()
                         .filter(scPep -> (scPep != null));
-            
+            }
+            else
+            {
+                binderPepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
+                        .map(gen, Encoders.STRING())
+                        .toJavaRDD()
+                        .map(pssmhc)
+                        .filter(scPep -> (scPep.ic50 < 1500.0));
+            }
+                                    
             if (cfg.doBinderPersist)
             {
                 binderPepts.persist(StorageLevel.MEMORY_AND_DISK_SER());

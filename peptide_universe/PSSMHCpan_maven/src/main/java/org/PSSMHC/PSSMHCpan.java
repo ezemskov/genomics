@@ -160,7 +160,7 @@ class PSSMParser
 class PSSMHCpan implements Serializable
 {
     public static String CmdlineHelpStr = "Usage : "
-        + "spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://<IP>:7077 /path/to/PSSMHCpan-1.0.jar <peptide_length> <allele_name> path/to/pssm_file.list <peptide start idx> <peptide qnty> <partitions> doSrcPersistCount doBinderPersist doBinderStore doBinderCount\n"
+        + "spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://<IP>:7077 /path/to/PSSMHCpan-1.0.jar <peptide_length> <allele_name> path/to/pssm_file.list <peptide start idx> <peptide qnty> <partitions> doGenAndScore doBinderPersist doBinderStore doBinderCount\n"
         + "e.g. spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://192.168.56.1:7077 ./PSSMHCpan-1.0.jar 9 HLA-A0201 database/PSSM/pssm_file.list 1 1000 4 0 1 1 1";
 
     
