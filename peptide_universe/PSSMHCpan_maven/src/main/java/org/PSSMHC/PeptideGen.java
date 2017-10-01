@@ -20,8 +20,8 @@ public class PeptideGen
      */
     public String Generate(long idxPep)
     {
-        //return (idxPep == lastIdxPep+1) ? GenerateNext() : GenerateFirst(idxPep);
-        return GenerateFirst(idxPep);
+        return (idxPep == lastIdxPep+1) ? GenerateNext() : GenerateFirst(idxPep);
+        //return GenerateFirst(idxPep);
     }
     
     private int FindLastIdxOfLastAmino()

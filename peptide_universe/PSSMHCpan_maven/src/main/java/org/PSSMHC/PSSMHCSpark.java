@@ -49,26 +49,12 @@ class PeptideGenFunc extends PeptideGen
     }
 }
 
-class PeptideGenAndScoreFunc extends PSSMHCpan
-                             implements Serializable, 
-                             MapFunction<Row, ScoredPeptide>
-{
-    private PeptideGen pepGen = new PeptideGen();
-    
-    public ScoredPeptide call(Row idx)
-    {
-        String peptide = pepGen.Generate(idx.getLong(0));
-        double ic50 = ScoreOnePeptide(peptide);
-        return (ic50 < 1500.0) ? new ScoredPeptide(peptide, ic50) : null;
-    }
-}
-
 class PSSMHCSparkCmdlineConfig
 {
     public long start;
     public long end;
     public int partitions;
-    public boolean doGenAndScore, doBinderPersist, doBinderStore, doBinderCount;
+    public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
         
     public PSSMHCSparkCmdlineConfig(String[] args, int firstArgIdx)
     {
@@ -81,7 +67,7 @@ class PSSMHCSparkCmdlineConfig
         end = start + ParseLongWithSuffix(args[firstArgIdx+1]);    
         partitions =  Integer.parseUnsignedInt(args[firstArgIdx+2]);
 
-        doGenAndScore     = (Integer.parseInt(args[firstArgIdx+3]) == 1);
+        doScore     = (Integer.parseInt(args[firstArgIdx+3]) == 1);
         doBinderPersist   = (Integer.parseInt(args[firstArgIdx+4]) == 1);
         doBinderStore     = (Integer.parseInt(args[firstArgIdx+5]) == 1);
         doBinderCount     = (Integer.parseInt(args[firstArgIdx+6]) == 1);
@@ -132,33 +118,25 @@ final public class PSSMHCSpark
             spconf.set("spark.kryo.registrator", ScPepRegistrator.class.getName()); 
             JavaSparkContext jsc = new JavaSparkContext(spconf);
             SQLContext sqlc = new SQLContext(jsc);
-            
-            PeptideGenAndScoreFunc genPssmhc = new PeptideGenAndScoreFunc();
-            int nextArgIdx = genPssmhc.InitFromCmdline(args);
-            PSSMHCSparkCmdlineConfig cfg = new PSSMHCSparkCmdlineConfig(args, nextArgIdx);
-
 
             PeptideGenFunc gen = new PeptideGenFunc();
             PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
-            pssmhc.InitFromCmdline(args);
+            int nextArgIdx = pssmhc.InitFromCmdline(args);
+            PSSMHCSparkCmdlineConfig cfg = new PSSMHCSparkCmdlineConfig(args, nextArgIdx);
 
+            JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
+                    .map(gen, Encoders.STRING())
+                    .toJavaRDD();
             
             JavaRDD<ScoredPeptide> binderPepts;
-            if (cfg.doGenAndScore)
-            { 
-                binderPepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
-                        .map(genPssmhc, Encoders.kryo(ScoredPeptide.class))
-                        .toJavaRDD()
-                        .filter(scPep -> (scPep != null));
-            }
-            else
+            if (!cfg.doScore)
             {
-                binderPepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
-                        .map(gen, Encoders.STRING())
-                        .toJavaRDD()
-                        .map(pssmhc)
-                        .filter(scPep -> (scPep.ic50 < 1500.0));
+                System.out.format("Generated %d peptides\n", pepts.count());
+                return;
             }
+            
+            binderPepts = pepts.map(pssmhc)
+                               .filter(scPep -> (scPep.ic50 < 1500.0));
                                     
             if (cfg.doBinderPersist)
             {
