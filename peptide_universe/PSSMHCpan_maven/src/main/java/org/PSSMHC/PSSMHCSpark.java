@@ -39,12 +39,13 @@ class PeptideBloomFilterFunc extends PeptideBloomFilter
     }
 }
 
-class PeptideGenFunc implements Serializable, 
+class PeptideGenFunc extends PeptideGen
+                     implements Serializable, 
                      MapFunction<Row, String>
 {
     public String call(Row idx)
     {
-        return PeptideGen.Generate(idx.getLong(0));
+        return Generate(idx.getLong(0));
     }
 }
 
@@ -52,9 +53,11 @@ class PeptideGenAndScoreFunc extends PSSMHCpan
                              implements Serializable, 
                              MapFunction<Row, ScoredPeptide>
 {
+    private PeptideGen pepGen = new PeptideGen();
+    
     public ScoredPeptide call(Row idx)
     {
-        String peptide = PeptideGen.Generate(idx.getLong(0));
+        String peptide = pepGen.Generate(idx.getLong(0));
         double ic50 = ScoreOnePeptide(peptide);
         return (ic50 < 1500.0) ? new ScoredPeptide(peptide, ic50) : null;
     }
