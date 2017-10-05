@@ -66,7 +66,7 @@ public class PeptideGen
         lastIdxPep = idxPep;
         if ((idxPep < 0) || (idxPep > maxIndex))
         {
-            throw new RuntimeException(String.format("Peptide index %d is out of bounds", idxPep));
+            throw new IndexOutOfBoundsException(String.format("Peptide index %d is out of bounds", idxPep));
         }
         
         //index of leftmost amino to be incremented, starting from right ('least significant amino')
