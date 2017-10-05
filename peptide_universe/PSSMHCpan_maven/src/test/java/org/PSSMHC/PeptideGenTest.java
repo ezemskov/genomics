@@ -64,8 +64,13 @@ public class PeptideGenTest
         testGenerateRange(2000, 2, 
             "AAAAAAGAA," + 
             "AAAAAAGAC,");
+
+        testGenerateRange(19*(160000 + 20 + 1), 3, 
+            "AAAAYAAYY," + 
+            "AAAAYACAA," + 
+            "AAAAYACAC,");
+
     }
-    
     
     @Test(expected = IndexOutOfBoundsException.class)
     public void testIdxOutOfRange1() 

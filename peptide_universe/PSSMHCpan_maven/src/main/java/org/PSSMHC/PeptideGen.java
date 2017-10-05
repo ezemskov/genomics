@@ -5,14 +5,12 @@ import java.lang.StringBuilder;
 public class PeptideGen
 {
     private static int pepLen = 9;
-    private static double lnALen = Math.log(Consts.aLen);         //ln(20)
-    private static long maxIndex = (long)Math.pow(Consts.aLen, pepLen);  //20^9      
+    private static long maxIndex = (long)Math.pow(Consts.aLen, pepLen) - 1; //20^9 - 1
     
+    private StringBuilder lastPepStr = null;
     private int[]  lastPepCharPos = new int[pepLen];
     private long   lastIdxPep = -2;
     
-    private StringBuilder pepConverter = new StringBuilder("AAAAAAAAA");
-
     /**
      * @param index number of peptide in lexicographical order, 
      * i.e. AAAAAAAAA is #0, AAAAAAAAC is #1, and YYYYYYYYY is #20^9-1
@@ -20,16 +18,12 @@ public class PeptideGen
      */
     public String Generate(long idxPep)
     {
-        return (idxPep == lastIdxPep+1) ? GenerateNext() : GenerateFirst(idxPep);
-    }
-    
-    private String ConvertLastCharPosToString()
-    {
-        for (int i=0; i<lastPepCharPos.length; ++i)
+        if ((idxPep < 0) || (idxPep > maxIndex))
         {
-            pepConverter.setCharAt(i, Consts.alphabet.charAt(lastPepCharPos[i]));
+            throw new IndexOutOfBoundsException(String.format("Peptide index %d is out of bounds", idxPep));
         }
-        return pepConverter.toString();
+
+        return (idxPep == lastIdxPep+1) ? GenerateNext() : GenerateFirst(idxPep);
     }
     
     private String GenerateNext()
@@ -37,31 +31,26 @@ public class PeptideGen
         lastIdxPep += 1;
         
         int idxChar = pepLen-1;
-        //find left bound of '....YYY' chars sequence, starting from right 
-        while (lastPepCharPos[idxChar] == Consts.aLen-1)
+        //find left bound of '....YYY' chars sequence, starting from right, 
+        //and set it to '....AAAA' (i.e. perform rollover)
+        for (; (idxChar >= 0) && (lastPepCharPos[idxChar] == Consts.aLen-1); --idxChar)
         {
-            for (; (idxChar >= 0) && (lastPepCharPos[idxChar] == Consts.aLen-1); --idxChar) {}
-            for (int i=idxChar+1; i<pepLen; ++i) 
-            {
-                lastPepCharPos[i] = 0;
-            }
+            lastPepCharPos[idxChar] = 0;
+            lastPepStr.setCharAt(idxChar, Consts.alphabet.charAt(0));
         }
-
-        lastPepCharPos[idxChar] += 1;
         
-        return ConvertLastCharPosToString();
+        lastPepCharPos[idxChar] += 1;
+        lastPepStr.setCharAt(idxChar, Consts.alphabet.charAt(lastPepCharPos[idxChar]));
+        
+        return lastPepStr.toString();
     }
     
     private String GenerateFirst(long idxPep)
     {
         lastIdxPep = idxPep;
-        if ((idxPep < 0) || (idxPep > maxIndex))
-        {
-            throw new IndexOutOfBoundsException(String.format("Peptide index %d is out of bounds", idxPep));
-        }
         
         //index of leftmost char to be incremented, starting from right ('least significant char')
-        int idxAm = (int)Math.floor(Math.log(idxPep)/lnALen);  
+        int idxAm = (int)Math.floor(Math.log(idxPep)/Math.log(Consts.aLen));  
         long idxPepRemainder = idxPep;
         int charPosInAlphabet = 0;
         for (; idxAm>=0; idxAm -= 1)
@@ -72,9 +61,20 @@ public class PeptideGen
             idxPepRemainder -= (charPosInAlphabet * charPosPow);
         }
         
-        return ConvertLastCharPosToString();
+        lastPepStr = ConvertCharcodesToString(lastPepCharPos);
+        return lastPepStr.toString(); 
     }
 
+    private static StringBuilder ConvertCharcodesToString(int[] charcodes)
+    {
+        StringBuilder pepConverter = new StringBuilder("AAAAAAAAA");
+        for (int i=0; i<charcodes.length; ++i)
+        {
+            pepConverter.setCharAt(i, Consts.alphabet.charAt(charcodes[i]));
+        }
+        return pepConverter;
+    }
+    
     public static void main(String[] args) throws Exception 
     {
         try
