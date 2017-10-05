@@ -1,0 +1,4 @@
+/PSSMHCpan/target/
+metastore_db
+*.pyc
+*.class
