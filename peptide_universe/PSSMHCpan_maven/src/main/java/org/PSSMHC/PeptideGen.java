@@ -21,14 +21,6 @@ public class PeptideGen
     public String Generate(long idxPep)
     {
         return (idxPep == lastIdxPep+1) ? GenerateNext() : GenerateFirst(idxPep);
-        //return GenerateFirst(idxPep);
-    }
-    
-    private int FindLastIdxOfLastAmino()
-    {
-        int i = lastPepCharPos.length-1;
-        for (; (i >= 0) && (lastPepCharPos[i] == Consts.aLen-1); --i) {}
-        return i;
     }
     
     private String ConvertLastCharPosToString()
@@ -44,19 +36,18 @@ public class PeptideGen
     {
         lastIdxPep += 1;
         
-        if (lastPepCharPos[pepLen-1] == Consts.aLen-1)
+        int idxChar = pepLen-1;
+        //find left bound of '....YYY' chars sequence, starting from right 
+        while (lastPepCharPos[idxChar] == Consts.aLen-1)
         {
-            int idx=FindLastIdxOfLastAmino();
-            for (int i=idx+1; i<lastPepCharPos.length; ++i)
+            for (; (idxChar >= 0) && (lastPepCharPos[idxChar] == Consts.aLen-1); --idxChar) {}
+            for (int i=idxChar+1; i<pepLen; ++i) 
             {
                 lastPepCharPos[i] = 0;
             }
-            lastPepCharPos[idx] += 1; 
         }
-        else
-        {
-            lastPepCharPos[pepLen-1] += 1;
-        }
+
+        lastPepCharPos[idxChar] += 1;
         
         return ConvertLastCharPosToString();
     }
@@ -69,13 +60,13 @@ public class PeptideGen
             throw new IndexOutOfBoundsException(String.format("Peptide index %d is out of bounds", idxPep));
         }
         
-        //index of leftmost amino to be incremented, starting from right ('least significant amino')
+        //index of leftmost char to be incremented, starting from right ('least significant char')
         int idxAm = (int)Math.floor(Math.log(idxPep)/lnALen);  
         long idxPepRemainder = idxPep;
         int charPosInAlphabet = 0;
         for (; idxAm>=0; idxAm -= 1)
         {
-            long charPosPow = (long)Math.pow(Consts.aLen, idxAm); //todo : integer powers here !
+            long charPosPow = (long)Math.pow(Consts.aLen, idxAm);
             charPosInAlphabet = (int)(idxPepRemainder / charPosPow);
             lastPepCharPos[pepLen-idxAm-1] = charPosInAlphabet;
             idxPepRemainder -= (charPosInAlphabet * charPosPow);
