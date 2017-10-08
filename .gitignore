@@ -1,4 +1,5 @@
 /PSSMHCpan/target/
+/peptide-clustering/target/
 metastore_db
 *.pyc
 *.class
