@@ -28,38 +28,60 @@ class PeptideGenFunc extends PeptideGen
 
 public class PeptideClusteringMain
 {
+    static String CmdlineHelpStr = "Usage : java org.PeptideClustering.PeptideClusteringMain peptides_list.txt <partitions>\n";
+
+    int partitions = 2;
+    String peptidesFilename = "";
+    
+    public int InitFromCmdline(String[] args)
+    {
+        if (args.length < 2)
+        {
+            throw new RuntimeException(CmdlineHelpStr);
+        }
+        
+        peptidesFilename = args[0];
+        partitions = Integer.parseInt(args[1]);
+        return 2;
+    }
+    
     public static void main(String[] args) throws Exception 
     {
-        SparkConf conf = new SparkConf()
-                .setAppName("Spark k-medoids clusterer");
-        JavaSparkContext jsc = new JavaSparkContext(conf);
-        SQLContext sqlc = new SQLContext(jsc);
-
-        PeptideGenFunc gen = new PeptideGenFunc();
-        JavaRDD<String> pepts = sqlc.range(0, 100, 1, 2)
-                .map(gen, Encoders.STRING())
-                .toJavaRDD();
-
-        Clusterer<String> clusterer = new Clusterer<>();
-        clusterer.setK(5);
-        clusterer.setSimilarity(new PeptideSimilarity());
-        clusterer.setNeighborGenerator(new ClaransNeighborGenerator<>());
-        clusterer.setBudget(new TrialsBudget(30));
-        Solution<String> res = clusterer.cluster(pepts);
-
-        SolutionClusters<String> res2 = new SolutionClusters<>();
-        res2.setSimilarity(new PeptideSimilarity());
-        res2.AssignElemsToClusters(pepts.collect(), res.getMedoids());
-            
-        System.out.println(res.toString());
-        for (SolutionClusters.Cluster<String> cluster : res2.getClusters())
+        try
         {
-            System.out.format("\nMedoid : %s\n", cluster.medoid);
-            for (SolutionClusters.ElemSim<String> elem : cluster.elems)
+            PeptideClusteringMain appCfg = new PeptideClusteringMain();
+            appCfg.InitFromCmdline(args);
+
+            SparkConf conf = new SparkConf()
+                    .setAppName("Spark peptide clusterization");
+            JavaSparkContext jsc = new JavaSparkContext(conf);
+            JavaRDD<String> pepts = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
+
+            Clusterer<String> clusterer = new Clusterer<>();
+            clusterer.setK(5);
+            clusterer.setSimilarity(new PeptideSimilarity());
+            clusterer.setNeighborGenerator(new ClaransNeighborGenerator<>());
+            clusterer.setBudget(new TrialsBudget(30));
+            Solution<String> res = clusterer.cluster(pepts);
+
+            SolutionClusters<String> res2 = new SolutionClusters<>();
+            res2.setSimilarity(new PeptideSimilarity());
+            res2.AssignElemsToClusters(pepts.collect(), res.getMedoids());
+
+            System.out.println(res.toString());
+            for (SolutionClusters.Cluster<String> cluster : res2.getClusters())
             {
-                System.out.format("\tElement : %s %f.0\n", elem.elem, elem.sim);
+                System.out.format("\nMedoid : %s\n", cluster.medoid);
+                for (SolutionClusters.ElemSim<String> elem : cluster.elems)
+                {
+                    System.out.format("\tElement : %s %f.0\n", elem.elem, elem.sim);
+                }
             }
+            jsc.close();
         }
-        jsc.close();
+        catch (Exception ex)
+        {
+            System.err.print(ex.toString() + "\n");
+        }
     }
 }
