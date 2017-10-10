@@ -16,13 +16,14 @@ public class SolutionClusters<T>
         }
 
         public T elem;
-        public double sim;
+        public double sim = Double.NaN;
     }
     
     public static class Cluster<T>
     {
         public T medoid;
-        public List<ElemSim<T>> elems = new ArrayList<>();    
+        public List<ElemSim<T>> elems = new ArrayList<>();
+        public double totalSim = 0.0;
     }
     
     public final void setSimilarity(final Similarity<T> simCalc_) 
@@ -57,9 +58,14 @@ public class SolutionClusters<T>
                 currSims[i] = simCalc.similarity(elem, medoids.get(i));
             }
             int cluster_index = argmax(currSims);
+            if (elem.equals(medoids.get(cluster_index))) //don't add medoid itself to the cluster
+            {
+                continue;
+            }
             
             Cluster<T> cluster = clusters.get(cluster_index);
             cluster.elems.add(new ElemSim<>(elem, currSims[cluster_index]));
+            cluster.totalSim += currSims[cluster_index];
             clusters.set(cluster_index, cluster);
         }
     }        
