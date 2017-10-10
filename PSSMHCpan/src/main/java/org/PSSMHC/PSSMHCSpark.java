@@ -49,12 +49,29 @@ class PeptideGenFunc extends PeptideGen
     }
 }
 
+class PeptideIc50FilterFunc implements Serializable,
+                        Function<ScoredPeptide,Boolean>
+{
+    public PeptideIc50FilterFunc(double ic50Threshold_)
+    {
+        ic50Threshold = ic50Threshold_;
+    }
+        
+    public Boolean call(ScoredPeptide scPep)
+    {
+        return (scPep.ic50 < ic50Threshold);
+    }
+
+    double ic50Threshold;
+}
+
 class PSSMHCSparkCmdlineConfig
 {
     public long start;
     public long end;
     public int partitions;
     public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
+    public int ic50Threshold;
         
     public PSSMHCSparkCmdlineConfig(String[] args, int firstArgIdx)
     {
@@ -71,6 +88,10 @@ class PSSMHCSparkCmdlineConfig
         doBinderPersist   = (Integer.parseInt(args[firstArgIdx+4]) == 1);
         doBinderStore     = (Integer.parseInt(args[firstArgIdx+5]) == 1);
         doBinderCount     = (Integer.parseInt(args[firstArgIdx+6]) == 1);
+        if (args.length >= 8)
+        {
+            ic50Threshold = Integer.parseInt(args[firstArgIdx+7]);
+        }
     }
 
     private static long ParseLongWithSuffix(String val)
@@ -123,6 +144,7 @@ final public class PSSMHCSpark
             PSSMHCpanSparkFunc pssmhc = new PSSMHCpanSparkFunc();
             int nextArgIdx = pssmhc.InitFromCmdline(args);
             PSSMHCSparkCmdlineConfig cfg = new PSSMHCSparkCmdlineConfig(args, nextArgIdx);
+            PeptideIc50FilterFunc filterFunc = new PeptideIc50FilterFunc(cfg.ic50Threshold);
 
             JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
                     .map(gen, Encoders.STRING())
@@ -136,7 +158,7 @@ final public class PSSMHCSpark
             }
             
             binderPepts = pepts.map(pssmhc)
-                               .filter(scPep -> (scPep.ic50 < 1500.0));
+                               .filter(filterFunc);
                                     
             if (cfg.doBinderPersist)
             {
@@ -149,7 +171,8 @@ final public class PSSMHCSpark
             }
             
             long binderCount = cfg.doBinderCount ? binderPepts.count() : -1;
-            System.out.format("Found %d binder peptides in total of %d\n", binderCount, (cfg.end-cfg.start));
+            System.out.format("Found %d binder peptides (IC50 < %d) in total of %d\n", 
+                binderCount, cfg.ic50Threshold, (cfg.end-cfg.start));
         }
         catch (Exception ex)
         {

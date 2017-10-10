@@ -160,8 +160,9 @@ class PSSMParser
 class PSSMHCpan implements Serializable
 {
     public static String CmdlineHelpStr = "Usage : "
-        + "spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://<IP>:7077 /path/to/PSSMHCpan-1.0.jar <peptide_length> <allele_name> path/to/pssm_file.list <peptide start idx> <peptide qnty> <partitions> doScore doBinderPersist doBinderStore doBinderCount\n"
-        + "e.g. spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://192.168.56.1:7077 ./PSSMHCpan-1.0.jar 9 HLA-A0201 database/PSSM/pssm_file.list 1 1000 4 0 1 1 1";
+        + "spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://<IP>:7077 /path/to/PSSMHCpan-1.0.jar <peptide_length> <allele_name> path/to/pssm_file.list <peptide start idx> <peptide qnty> <partitions> doScore doBinderPersist doBinderStore doBinderCount <ic50 cutoff threshold>\n"
+        + "e.g. spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://192.168.56.1:7077 ./PSSMHCpan-1.0.jar 9 HLA-A0201 database/PSSM/pssm_file.list 1 1000 4 0 1 1 1\n"
+        + "default ic50 cutoff threshold is 1500\n";
 
     
     private static double score_max = 0.8;
