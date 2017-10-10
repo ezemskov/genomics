@@ -2,8 +2,6 @@ package org.PeptideClustering;
 
 import info.debatty.spark.kmedoids.Clusterer;
 import info.debatty.spark.kmedoids.Solution;
-import info.debatty.spark.kmedoids.SolutionClusters;
-import info.debatty.spark.kmedoids.Cluster;
 import info.debatty.spark.kmedoids.budget.TrialsBudget;
 import info.debatty.spark.kmedoids.neighborgenerator.ClaransNeighborGenerator;
 import java.io.Serializable;
@@ -54,10 +52,10 @@ public class PeptideClusteringMain
         res2.AssignElemsToClusters(pepts.collect(), res.getMedoids());
             
         System.out.println(res.toString());
-        for (Cluster<String> cluster : res2.getClusters())
+        for (SolutionClusters.Cluster<String> cluster : res2.getClusters())
         {
             System.out.format("\nMedoid : %s\n", cluster.medoid);
-            for (Cluster.ElemSim<String> elem : cluster.elems)
+            for (SolutionClusters.ElemSim<String> elem : cluster.elems)
             {
                 System.out.format("\tElement : %s %f.0\n", elem.elem, elem.sim);
             }
