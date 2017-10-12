@@ -71,10 +71,10 @@ public class PeptideClusteringMain
             System.out.println(res.toString());
             for (SolutionClusters.Cluster<String> cluster : res2.getClusters())
             {
-                System.out.format("\nMedoid : %s\n", cluster.medoid);
+                System.out.format("\nMedoid : %s totalSim %.2f\n", cluster.medoid, cluster.totalSim);
                 for (SolutionClusters.ElemSim<String> elem : cluster.elems)
                 {
-                    System.out.format("\tElement : %s %f.0\n", elem.elem, elem.sim);
+                    System.out.format("\tElement : %s %.2f\n", elem.elem, elem.sim);
                 }
             }
             jsc.close();
