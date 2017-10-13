@@ -28,21 +28,23 @@ class PeptideGenFunc extends PeptideGen
 
 public class PeptideClusteringMain
 {
-    static String CmdlineHelpStr = "Usage : java org.PeptideClustering.PeptideClusteringMain peptides_list.txt <partitions>\n";
+    static String CmdlineHelpStr = "Usage : java org.PeptideClustering.PeptideClusteringMain peptides_list.txt partitions clusters trials\n";
 
-    int partitions = 2;
+    int partitions, clusters, trials;
     String peptidesFilename = "";
     
     public int InitFromCmdline(String[] args)
     {
-        if (args.length < 2)
+        if (args.length < 4)
         {
             throw new RuntimeException(CmdlineHelpStr);
         }
         
         peptidesFilename = args[0];
         partitions = Integer.parseInt(args[1]);
-        return 2;
+        clusters = Integer.parseInt(args[2]);
+        trials = Integer.parseInt(args[3]);
+        return 4;
     }
     
     public static void main(String[] args) throws Exception 
@@ -58,10 +60,10 @@ public class PeptideClusteringMain
             JavaRDD<String> pepts = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
 
             Clusterer<String> clusterer = new Clusterer<>();
-            clusterer.setK(5);
+            clusterer.setK(appCfg.clusters);
             clusterer.setSimilarity(new PeptideSimilarity());
             clusterer.setNeighborGenerator(new ClaransNeighborGenerator<>());
-            clusterer.setBudget(new TrialsBudget(30));
+            clusterer.setBudget(new TrialsBudget(appCfg.trials));
             Solution<String> res = clusterer.cluster(pepts);
 
             SolutionClusters<String> res2 = new SolutionClusters<>();
@@ -71,7 +73,9 @@ public class PeptideClusteringMain
             System.out.println(res.toString());
             for (SolutionClusters.Cluster<String> cluster : res2.getClusters())
             {
-                System.out.format("\nMedoid : %s totalSim %.2f\n", cluster.medoid, cluster.totalSim);
+                
+                System.out.format("\nMedoid : %s totalSim %.2f avgSim %.2f\n", 
+                    cluster.medoid, cluster.totalSim, cluster.totalSim/cluster.elems.size());
                 for (SolutionClusters.ElemSim<String> elem : cluster.elems)
                 {
                     System.out.format("\tElement : %s %.2f\n", elem.elem, elem.sim);

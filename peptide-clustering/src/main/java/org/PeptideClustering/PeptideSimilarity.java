@@ -75,8 +75,8 @@ class Blosum62 extends SubstMatrix implements Serializable
 public class PeptideSimilarity implements Similarity<String> 
 {
     private static String alphabetRegex = "[" + Consts.alphabet + "]+";
-    private static SubstMatrix SM = new Blosum62();
     private static double[] PosWeights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    private static SubstMatrix SM = new Blosum62();
         
     public double similarity(String p1, String p2)
     {
@@ -85,12 +85,16 @@ public class PeptideSimilarity implements Similarity<String>
                (p1.length() == p2.length()) &&
                (PosWeights.length >= p1.length()));
         
-        double res = 0.0;
+        double sc12 = 0.0, sc11 = 0.0, sc22 = 0.0;
         for (int i=0; i<p1.length(); ++i)
         {
-            res += PosWeights[i] * SM.get(p1.charAt(i), p2.charAt(i));
+            char ch1 = p1.charAt(i);
+            char ch2 = p2.charAt(i);
+            sc12 += PosWeights[i] * SM.get(ch1, ch2);
+            sc11 += PosWeights[i] * SM.get(ch1, ch1);
+            sc22 += PosWeights[i] * SM.get(ch2, ch2);
         }
             
-        return res;
+        return 2*sc12/(sc11 + sc22);
     }
 }
