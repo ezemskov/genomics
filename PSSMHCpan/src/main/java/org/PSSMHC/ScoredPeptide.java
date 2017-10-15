@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class ScoredPeptide implements Serializable
 {
-    ScoredPeptide(String peptide, double ic50) 
+    public ScoredPeptide(String peptide, double ic50) 
     { 
         this.peptide = peptide; 
         this.ic50 = ic50;

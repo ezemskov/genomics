@@ -64,10 +64,12 @@ public class Impl
         public int partitions;
         public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
         public int ic50Threshold;
-
-        public CmdlineCfg(String[] args, int firstArgIdx)
+        private int firstArgIdx;
+        
+        public CmdlineCfg(String[] args, int firstArgIdx_)
         {
-            if (args.length < firstArgIdx+7)
+            firstArgIdx = firstArgIdx_;
+            if (args.length < firstArgIdx+8)
             {
                 throw new RuntimeException(PSSMHCpan.CmdlineHelpStr);
             }
@@ -80,12 +82,11 @@ public class Impl
             doBinderPersist   = (Integer.parseInt(args[firstArgIdx+4]) == 1);
             doBinderStore     = (Integer.parseInt(args[firstArgIdx+5]) == 1);
             doBinderCount     = (Integer.parseInt(args[firstArgIdx+6]) == 1);
-            if (args.length >= 8)
-            {
-                ic50Threshold = Integer.parseInt(args[firstArgIdx+7]);
-            }
+            ic50Threshold = Integer.parseInt(args[firstArgIdx+7]);
         }
-
+        
+        public int NextArgIdx() { return firstArgIdx + 8; }
+            
         private static long ParseLongWithSuffix(String val)
         {
             int suffixPos = val.length()-1;
