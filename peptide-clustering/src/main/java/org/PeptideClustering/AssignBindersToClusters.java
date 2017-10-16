@@ -13,6 +13,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.storage.StorageLevel;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -103,47 +104,53 @@ public class AssignBindersToClusters
                 .filter(filterFunc)
                 .map(scp -> {return scp.peptide;});
             
-            System.out.format("Binders qnty %d first %s\n", binders.count(), binders.collect().toString());
+            binders.persist(StorageLevel.MEMORY_AND_DISK());
+            System.out.format("Binders qnty %d\n", binders.count());
             JavaRDD<String> clusterCenters = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
 
-            System.out.format("Centers qnty %d first %s\n", 
-                clusterCenters.count(), clusterCenters.first());
+            //System.out.format("Centers qnty %d first %s\n", clusterCenters.count(), clusterCenters.first());
 
             JavaPairRDD<String, String> pairs = clusterCenters.cartesian(binders);
-            System.out.format("Pairs qnty %d first %s\n", pairs.count(), pairs.first().toString());
+            //System.out.format("Pairs qnty %d first %s\n", pairs.count(), pairs.first().toString());
 
             SimFunc sim = new SimFunc();
             JavaRDD<Tuple3<String, String, Double>> simTriples = 
                 pairs.map(sim)
-                     .filter(triple -> { return triple._3() >= 0.2; });
+                     .filter(triple -> { return triple._3() >= 0.8; });
+            simTriples.persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Filtered triples qnty %d \n", simTriples.count());
-            FormatList3(simTriples.collect());
+            //FormatList3(simTriples.collect());
             
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, ScoredPeptide> simPairs = simTriples.mapToPair(triple -> {
                 ScoredPeptide centerWithSim = new ScoredPeptide(triple._1(), triple._3());
                 return new Tuple2(triple._2(), centerWithSim); 
             });
-            System.out.format("Binder to all centers : qnty %d\n", simPairs.count());
-            FormatList(simPairs.collect());            
+            //System.out.format("Binder to all centers : qnty %d\n", simPairs.count());
+            //FormatList(simPairs.collect());            
             
             JavaPairRDD<String, ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
                 (scp1, scp2) -> { return (scp1.ic50 > scp2.ic50) ? scp1 : scp2; } 
             );
-            System.out.format("Binder to its cluster : qnty %d\n", simMaxPairs.count());
-            FormatList(simMaxPairs.collect());
+            //System.out.format("Binder to its cluster : qnty %d\n", simMaxPairs.count());
+            //FormatList(simMaxPairs.collect());
 
             JavaPairRDD<String, ScoredPeptide> simMaxPairsInv = simMaxPairs.mapToPair(tuple -> {
                 ScoredPeptide binderWithSim = new ScoredPeptide(tuple._1, tuple._2.ic50);
                 return new Tuple2<>(tuple._2.peptide, binderWithSim);
             });
-            System.out.format("Clusters to binders : qnty %d\n", simMaxPairsInv.count());
-            FormatList(simMaxPairsInv.collect());
+            simMaxPairsInv = simMaxPairsInv.coalesce(appCfg.partitions);
+            simMaxPairsInv.persist(StorageLevel.MEMORY_AND_DISK());
+            //System.out.format("Clusters to binders : qnty %d\n", simMaxPairsInv.count());
+            //FormatList(simMaxPairsInv.collect());
                         
             Map<String, Long> clustersCount = simMaxPairsInv.countByKey();
-            System.out.println("Cluster sizes");
+            System.out.format("Clusters qnty %d\n", clustersCount.size());
             FormatMap(clustersCount);
-                        
+
+            JavaPairRDD<String, Iterable<ScoredPeptide>> simMaxPairsGrp = simMaxPairsInv.groupByKey();
+            simMaxPairsGrp.saveAsTextFile("output-clusters");
+            
             jsc.close();
         }
         catch (Exception ex)
