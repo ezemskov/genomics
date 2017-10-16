@@ -12,7 +12,7 @@ public class ScoredPeptide implements Serializable
     
     public String toString()
     {
-        return String.format("%s,%.0f", peptide, ic50);
+        return String.format("%s,%.2f", peptide, ic50);
     }
         
     public String peptide; 

@@ -2,6 +2,7 @@ package org.PeptideClustering;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.List;
 import org.PSSMHC.Impl;
 import org.PSSMHC.ScoredPeptide;
 import org.apache.spark.SparkConf;
@@ -58,6 +59,22 @@ public class AssignBindersToClusters
             System.out.format("%s %s\n", elem.getKey(), elem.getValue().toString());
         }
     }
+
+    static <T> void FormatList(List<Tuple2<String, T>> list)
+    {
+        for (Tuple2<String, T> elem : list)
+        {
+            System.out.format("%s %s\n", elem._1, elem._2.toString());
+        }
+    }
+
+    static void FormatList3(List<Tuple3<String, String, Double>> list)
+    {
+        for (Tuple3<String, String, Double> elem : list)
+        {
+            System.out.format("%s %s %.2f\n", elem._1(), elem._2(), elem._3());
+        }
+    }
     
     public static void main(String[] args) throws Exception 
     {
@@ -86,11 +103,11 @@ public class AssignBindersToClusters
                 .filter(filterFunc)
                 .map(scp -> {return scp.peptide;});
             
-            System.out.format("Binders qnty %d first %s\n", binders.count(), binders.first());
+            System.out.format("Binders qnty %d first %s\n", binders.count(), binders.collect().toString());
             JavaRDD<String> clusterCenters = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
 
-            System.out.format("Centers qnty %d distinct %d first %s\n", 
-                clusterCenters.count(), clusterCenters.distinct().count(), clusterCenters.first());
+            System.out.format("Centers qnty %d first %s\n", 
+                clusterCenters.count(), clusterCenters.first());
 
             JavaPairRDD<String, String> pairs = clusterCenters.cartesian(binders);
             System.out.format("Pairs qnty %d first %s\n", pairs.count(), pairs.first().toString());
@@ -99,48 +116,34 @@ public class AssignBindersToClusters
             JavaRDD<Tuple3<String, String, Double>> simTriples = 
                 pairs.map(sim)
                      .filter(triple -> { return triple._3() >= 0.2; });
-            System.out.format("Filtered triples qnty %d first %s\n", simTriples.count(), simTriples.first().toString());
+            System.out.format("Filtered triples qnty %d \n", simTriples.count());
+            FormatList3(simTriples.collect());
             
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, ScoredPeptide> simPairs = simTriples.mapToPair(triple -> {
                 ScoredPeptide centerWithSim = new ScoredPeptide(triple._1(), triple._3());
                 return new Tuple2(triple._2(), centerWithSim); 
             });
-            System.out.format("{Bn -> {(Ck, Snk)}} : qnty %d first %s\n", simPairs.count(), simPairs.first().toString());
+            System.out.format("Binder to all centers : qnty %d\n", simPairs.count());
+            FormatList(simPairs.collect());            
             
-            // {Bn -> (Ci_max, Sni_max)}
             JavaPairRDD<String, ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
                 (scp1, scp2) -> { return (scp1.ic50 > scp2.ic50) ? scp1 : scp2; } 
             );
-            System.out.format("Binter to its cluster : qnty %d first %s\n", simMaxPairs.count(), simMaxPairs.take(2).toString());
+            System.out.format("Binder to its cluster : qnty %d\n", simMaxPairs.count());
+            FormatList(simMaxPairs.collect());
 
-            // {Ci_max -> (Bn, Sni_max)}
             JavaPairRDD<String, ScoredPeptide> simMaxPairsInv = simMaxPairs.mapToPair(tuple -> {
                 ScoredPeptide binderWithSim = new ScoredPeptide(tuple._1, tuple._2.ic50);
                 return new Tuple2<>(tuple._2.peptide, binderWithSim);
             });
-            System.out.format("Clusters to binders : qnty %d first %s\n", simMaxPairsInv.count(), simMaxPairsInv.take(2).toString());
-            
-            // {Ck -> {Bi, Ski)}
-            JavaPairRDD<String, Iterable<ScoredPeptide>> simMaxPairsGrp = simMaxPairsInv.groupByKey();
-            simMaxPairsGrp.cache();
-
-            System.out.format("Clusters to set of binders : qnty %d first %s\n", simMaxPairsGrp.count(), simMaxPairsGrp.take(2).toString());
-            
-            Map<String, Long> clustersCount = simMaxPairsGrp.countByKey();
-
+            System.out.format("Clusters to binders : qnty %d\n", simMaxPairsInv.count());
+            FormatList(simMaxPairsInv.collect());
+                        
+            Map<String, Long> clustersCount = simMaxPairsInv.countByKey();
             System.out.println("Cluster sizes");
             FormatMap(clustersCount);
-            
-            Map<String, Double> clusterSimCount = simMaxPairsGrp.mapValues(scpIt -> {
-                double sumSim = 0.0;
-                for (ScoredPeptide scp : scpIt) { sumSim += scp.ic50; }
-                return sumSim;
-            }).collectAsMap();
-
-            System.out.println("Cluster similarities : ");
-            FormatMap(clusterSimCount);
-            
+                        
             jsc.close();
         }
         catch (Exception ex)
