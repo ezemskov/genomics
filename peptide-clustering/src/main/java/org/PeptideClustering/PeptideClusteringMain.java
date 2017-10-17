@@ -34,7 +34,7 @@ public class PeptideClusteringMain
     {
         try
         {
-            XmlCfg appCfg = new XmlCfg(args[0]);
+            XmlCfg appCfg = new XmlCfg(Impl.XmlUtils.firstOrDef(args));
 
             SparkConf conf = new SparkConf()
                     .setAppName("SparkPeptideClustering");

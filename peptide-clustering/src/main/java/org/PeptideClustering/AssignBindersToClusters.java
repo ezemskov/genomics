@@ -80,16 +80,15 @@ public class AssignBindersToClusters
             JavaSparkContext jsc = new JavaSparkContext(conf);
             SQLContext sqlc = new SQLContext(jsc);
 
-            String xmlFilename = args[0];
-            org.PSSMHC.Impl.XmlCfg pssmhcCfg = new org.PSSMHC.Impl.XmlCfg(xmlFilename);
-            XmlCfg appCfg = new XmlCfg(xmlFilename);
+            Impl.XmlCfg pssmhcCfg = new Impl.XmlCfg(Impl.XmlUtils.firstOrDef(args));
+            XmlCfg appCfg = new XmlCfg(Impl.XmlUtils.firstOrDef(args));
 
             JavaRDD<String> binders = 
                 sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
-                .map(new org.PSSMHC.Impl.PeptideGenSparkFunc(), Encoders.STRING())
+                .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                 .toJavaRDD()
-                .map(new org.PSSMHC.Impl.PSSMHCpanSparkFunc(xmlFilename))
-                .filter(new org.PSSMHC.Impl.Ic50FilterFunc(pssmhcCfg.ic50Threshold))
+                .map(new Impl.PSSMHCpanSparkFunc(Impl.XmlUtils.firstOrDef(args)))
+                .filter(new Impl.Ic50FilterFunc(pssmhcCfg.ic50Threshold))
                 .map(scp -> {return scp.peptide;});
             
             binders.persist(StorageLevel.MEMORY_AND_DISK());

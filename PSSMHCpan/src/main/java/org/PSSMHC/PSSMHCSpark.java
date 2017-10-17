@@ -33,8 +33,7 @@ final public class PSSMHCSpark
             JavaSparkContext jsc = new JavaSparkContext(spconf);
             SQLContext sqlc = new SQLContext(jsc);
 
-            String xmlFilename = args[0];
-            Impl.XmlCfg cfg = new Impl.XmlCfg(xmlFilename);
+            Impl.XmlCfg cfg = new Impl.XmlCfg(Impl.XmlUtils.firstOrDef(args));
 
             JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
                     .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
@@ -47,7 +46,7 @@ final public class PSSMHCSpark
                 return;
             }
             
-            binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(xmlFilename))
+            binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(Impl.XmlUtils.firstOrDef(args)))
                                .filter(new Impl.Ic50FilterFunc(cfg.ic50Threshold));
                                     
             if (cfg.doBinderPersist)

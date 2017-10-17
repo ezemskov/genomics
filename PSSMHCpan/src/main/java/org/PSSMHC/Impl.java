@@ -81,6 +81,11 @@ public class Impl
     {
         public static String DefaultXmlFilename = "PeptideCfg.xml";
         
+        public static String firstOrDef(String args[])
+        {
+            return (args.length > 0) ? args[0] : DefaultXmlFilename;
+        }
+        
         public static Element parseXml(String filename) 
             throws ParserConfigurationException, SAXException, IOException
         {
