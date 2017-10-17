@@ -39,11 +39,10 @@ final public class PSSMHCSpark
             JavaSparkContext jsc = new JavaSparkContext(spconf);
             SQLContext sqlc = new SQLContext(jsc);
 
-            Impl.GenFunc gen = new Impl.GenFunc();
-            Impl.ScoreFunc pssmhc = new Impl.ScoreFunc();
+            Impl.PeptideGenSparkFunc gen = new Impl.PeptideGenSparkFunc();
+            Impl.PSSMHCpanSparkFunc pssmhc = new Impl.PSSMHCpanSparkFunc();
             int nextArgIdx = pssmhc.InitFromCmdline(args);
             Impl.CmdlineCfg cfg = new Impl.CmdlineCfg(args, nextArgIdx);
-            Impl.Ic50FilterFunc filterFunc = new Impl.Ic50FilterFunc(cfg.ic50Threshold);
 
             JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
                     .map(gen, Encoders.STRING())
@@ -57,7 +56,7 @@ final public class PSSMHCSpark
             }
             
             binderPepts = pepts.map(pssmhc)
-                               .filter(filterFunc);
+                               .filter(new Impl.Ic50FilterFunc(cfg.ic50Threshold));
                                     
             if (cfg.doBinderPersist)
             {
@@ -66,7 +65,7 @@ final public class PSSMHCSpark
             
             if (cfg.doBinderStore)
             {            
-                binderPepts.saveAsTextFile("OutputPSSMHC", GzipCodec.class);
+                binderPepts.saveAsTextFile("output-pssmhc", GzipCodec.class);
             }
             
             long binderCount = cfg.doBinderCount ? binderPepts.count() : -1;

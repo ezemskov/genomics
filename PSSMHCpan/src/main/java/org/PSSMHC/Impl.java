@@ -9,9 +9,10 @@ import org.apache.spark.sql.Row;
 
 public class Impl
 {
-    public static class ScoreFunc extends PSSMHCpan
-                    implements Serializable,
-                    Function<String,ScoredPeptide>
+    public static class PSSMHCpanSparkFunc 
+                            extends PSSMHCpan
+                            implements Serializable,
+                            Function<String,ScoredPeptide>
     {
         @Override
         public ScoredPeptide call(String peptide)
@@ -20,9 +21,10 @@ public class Impl
         }
     }
 
-    public static class BloomFunc extends PeptideBloomFilter
-                    implements Serializable,
-                    VoidFunction<ScoredPeptide>
+    public static class PeptideBloomSparkFunc 
+                            extends PeptideBloomFilter
+                            implements Serializable,
+                            VoidFunction<ScoredPeptide>
     {
         @Override
         public void call(ScoredPeptide scPep)
@@ -31,9 +33,10 @@ public class Impl
         }
     }
 
-    public static class GenFunc extends PeptideGen
-                    implements Serializable, 
-                    MapFunction<Row, String>
+    public static class PeptideGenSparkFunc 
+                            extends PeptideGen
+                            implements Serializable, 
+                            MapFunction<Row, String>
     {
         public String call(Row idx)
         {
@@ -41,8 +44,9 @@ public class Impl
         }
     }
 
-    public static class Ic50FilterFunc implements Serializable,
-                         Function<ScoredPeptide,Boolean>
+    public static class Ic50FilterFunc 
+                            implements Serializable,
+                            Function<ScoredPeptide,Boolean>
     {
         public Ic50FilterFunc(double ic50Threshold_)
         {

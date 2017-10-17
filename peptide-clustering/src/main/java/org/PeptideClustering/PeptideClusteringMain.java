@@ -16,16 +16,6 @@ import org.apache.spark.sql.SQLContext;
 import org.PSSMHC.PeptideGen;
 import org.apache.spark.sql.Encoders;
 
-class PeptideGenFunc extends PeptideGen
-                     implements Serializable, 
-                     MapFunction<Row, String>
-{
-    public String call(Row idx)
-    {
-        return Generate(idx.getLong(0));
-    }
-}
-
 public class PeptideClusteringMain
 {
     static String CmdlineHelpStr = "Usage : java org.PeptideClustering.PeptideClusteringMain peptides_list.txt partitions clusters trials\n";
