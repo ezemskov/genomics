@@ -10,10 +10,10 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
+import org.w3c.dom.Element;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -33,22 +33,17 @@ public class AssignBindersToClusters
         }
     }
 
-    static class CmdlineCfg
+    static class XmlCfg
     {
-        static String CmdlineHelpStr = "Usage : java org.PeptideClustering.AssignBindersToClusters cluster_centers_list.txt partitions\n";
-
-        int partitions;
         String peptidesFilename = "";
+        int partitions = 0;
 
-        public CmdlineCfg(String[] args, int firstArgIdx)
+        public XmlCfg(String xmlFilename) throws Exception
         {
-            if (args.length < firstArgIdx+2)
-            {
-                throw new RuntimeException(CmdlineHelpStr);
-            }
+            Element root = Impl.XmlUtils.parseXml(xmlFilename);
 
-            peptidesFilename = args[firstArgIdx];
-            partitions = Integer.parseInt(args[firstArgIdx + 1]);
+            partitions       = Integer.parseInt(Impl.XmlUtils.getChildAttr(root, "spark", "partitions"));
+            peptidesFilename = Impl.XmlUtils.getChildAttr(root, "clustering", "peptidesFilePath");            
         }
     }
     
@@ -81,20 +76,19 @@ public class AssignBindersToClusters
         try
         {
             SparkConf conf = new SparkConf()
-                    .setAppName("Spark peptide clusterization : cluster generated binders around real centers");
+                    .setAppName("PeptideClustring2");
             JavaSparkContext jsc = new JavaSparkContext(conf);
             SQLContext sqlc = new SQLContext(jsc);
 
-            org.PSSMHC.Impl.PSSMHCpanSparkFunc pssmhc = new org.PSSMHC.Impl.PSSMHCpanSparkFunc();
-            int nextArgIdx = pssmhc.InitFromCmdline(args);
-            org.PSSMHC.Impl.CmdlineCfg pssmhcCfg = new org.PSSMHC.Impl.CmdlineCfg(args, nextArgIdx);
-            CmdlineCfg appCfg = new CmdlineCfg(args, pssmhcCfg.NextArgIdx());
+            String xmlFilename = args[0];
+            org.PSSMHC.Impl.XmlCfg pssmhcCfg = new org.PSSMHC.Impl.XmlCfg(xmlFilename);
+            XmlCfg appCfg = new XmlCfg(xmlFilename);
 
             JavaRDD<String> binders = 
                 sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
                 .map(new org.PSSMHC.Impl.PeptideGenSparkFunc(), Encoders.STRING())
                 .toJavaRDD()
-                .map(pssmhc)
+                .map(new org.PSSMHC.Impl.PSSMHCpanSparkFunc(xmlFilename))
                 .filter(new org.PSSMHC.Impl.Ic50FilterFunc(pssmhcCfg.ic50Threshold))
                 .map(scp -> {return scp.peptide;});
             

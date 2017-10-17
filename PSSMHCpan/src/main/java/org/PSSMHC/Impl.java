@@ -1,11 +1,22 @@
 package org.PSSMHC;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.Row;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
+import org.w3c.dom.Document; 
+import org.w3c.dom.Element; 
+import org.w3c.dom.NodeList; 
+import org.w3c.dom.Node; 
 
 public class Impl
 {
@@ -14,6 +25,11 @@ public class Impl
                             implements Serializable,
                             Function<String,ScoredPeptide>
     {
+        public PSSMHCpanSparkFunc(String xmlFilename) throws Exception
+        {
+            super(xmlFilename);
+        }
+            
         @Override
         public ScoredPeptide call(String peptide)
         {
@@ -41,7 +57,7 @@ public class Impl
         public String call(Row idx)
         {
             return Generate(idx.getLong(0));
-        }
+        };
     }
 
     public static class Ic50FilterFunc 
@@ -61,36 +77,73 @@ public class Impl
         double ic50Threshold;
     }
 
-    public static class CmdlineCfg
+    public static class XmlUtils
+    {
+        public static String DefaultXmlFilename = "PeptideCfg.xml";
+        
+        public static Element parseXml(String filename) 
+            throws ParserConfigurationException, SAXException, IOException
+        {
+            String filenameOrDefault = filename.isEmpty() ? DefaultXmlFilename : filename;
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document domDoc = builder.parse(new File(filenameOrDefault));
+            assert(domDoc != null);    //should throw instead
+            return domDoc.getDocumentElement();
+        }
+
+        public static Element getChildElem(Node parent, String childName)
+        {
+            NodeList children = parent.getChildNodes();
+            for (int i=0; i<children.getLength(); ++i)
+            {
+                Node child = children.item(i);
+                if (!child.getNodeName().equals(childName))
+                {
+                    continue;
+                }
+                
+                if (child.getNodeType() != Node.ELEMENT_NODE)
+                {
+                    return null;
+                }
+                    
+                return (Element)child;
+            }
+            
+            return null;
+        }
+
+        public static String getChildAttr(Node parent, String childName, String childAttr)
+        {
+            Element child = getChildElem(parent, childName);
+            return (child != null) ? child.getAttribute(childAttr) : "";
+        }
+    }
+
+    public static class XmlCfg
     {
         public long start;
         public long end;
         public int partitions;
         public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
         public int ic50Threshold;
-        private int firstArgIdx;
         
-        public CmdlineCfg(String[] args, int firstArgIdx_)
+        public XmlCfg(String xmlFilename) throws Exception
         {
-            firstArgIdx = firstArgIdx_;
-            if (args.length < firstArgIdx+8)
-            {
-                throw new RuntimeException(PSSMHCpan.CmdlineHelpStr);
-            }
-
-            start =       ParseLongWithSuffix(args[firstArgIdx]);
-            end = start + ParseLongWithSuffix(args[firstArgIdx+1]);    
-            partitions =  Integer.parseUnsignedInt(args[firstArgIdx+2]);
-
-            doScore     = (Integer.parseInt(args[firstArgIdx+3]) == 1);
-            doBinderPersist   = (Integer.parseInt(args[firstArgIdx+4]) == 1);
-            doBinderStore     = (Integer.parseInt(args[firstArgIdx+5]) == 1);
-            doBinderCount     = (Integer.parseInt(args[firstArgIdx+6]) == 1);
-            ic50Threshold = Integer.parseInt(args[firstArgIdx+7]);
-        }
-        
-        public int NextArgIdx() { return firstArgIdx + 8; }
+            Element root = XmlUtils.parseXml(xmlFilename);
+            Element elem = XmlUtils.getChildElem(root, "generator");
+            if (elem == null) { return; }
             
+            start            = ParseLongWithSuffix(elem.getAttribute("start"));
+            end      = start + ParseLongWithSuffix(elem.getAttribute("qnty"));
+            doScore          = elem.getAttribute("doScore").equals("1");
+            doBinderPersist  = elem.getAttribute("doBinderPersist").equals("1");
+            doBinderStore    = elem.getAttribute("doBinderStore").equals("1");
+            doBinderCount    = elem.getAttribute("doBinderCount").equals("1");
+            ic50Threshold    = Integer.parseInt(elem.getAttribute("ic50Threshold"));            
+            partitions       = Integer.parseInt(XmlUtils.getChildAttr(root, "spark", "partitions"));
+        }
+
         private static long ParseLongWithSuffix(String val)
         {
             int suffixPos = val.length()-1;
@@ -113,5 +166,5 @@ public class Impl
             suffixes.put('G', (long)1E9);
             suffixes.put('T', (long)1E12);
         }
-    }    
+    }
 }

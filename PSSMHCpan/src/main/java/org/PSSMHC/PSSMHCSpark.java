@@ -1,14 +1,8 @@
 package org.PSSMHC;
 
-import java.io.Serializable;
-import java.util.HashMap;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.Row;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.SparkConf; 
@@ -39,13 +33,11 @@ final public class PSSMHCSpark
             JavaSparkContext jsc = new JavaSparkContext(spconf);
             SQLContext sqlc = new SQLContext(jsc);
 
-            Impl.PeptideGenSparkFunc gen = new Impl.PeptideGenSparkFunc();
-            Impl.PSSMHCpanSparkFunc pssmhc = new Impl.PSSMHCpanSparkFunc();
-            int nextArgIdx = pssmhc.InitFromCmdline(args);
-            Impl.CmdlineCfg cfg = new Impl.CmdlineCfg(args, nextArgIdx);
+            String xmlFilename = args[0];
+            Impl.XmlCfg cfg = new Impl.XmlCfg(xmlFilename);
 
             JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
-                    .map(gen, Encoders.STRING())
+                    .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                     .toJavaRDD();
             
             JavaRDD<ScoredPeptide> binderPepts;
@@ -55,7 +47,7 @@ final public class PSSMHCSpark
                 return;
             }
             
-            binderPepts = pepts.map(pssmhc)
+            binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(xmlFilename))
                                .filter(new Impl.Ic50FilterFunc(cfg.ic50Threshold));
                                     
             if (cfg.doBinderPersist)
