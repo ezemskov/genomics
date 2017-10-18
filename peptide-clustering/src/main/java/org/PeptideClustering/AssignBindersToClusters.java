@@ -25,7 +25,7 @@ public class AssignBindersToClusters
                     Function<Tuple2<String, String>, Tuple3<String, String, Double>>
     {
         @Override
-        public Tuple3<String, String,Double> call(Tuple2<String, String> pepPair)
+        public Tuple3<String, String, Double> call(Tuple2<String, String> pepPair)
         {
             return new Tuple3(pepPair._1, pepPair._2,
                 similarity(pepPair._1, pepPair._2)
@@ -33,17 +33,38 @@ public class AssignBindersToClusters
         }
     }
 
+    static class TripleScoreFilterSparkFunc 
+                            implements Serializable,
+                            Function<Tuple3<String, String, Double>,Boolean>
+    {
+        public TripleScoreFilterSparkFunc(double scoreThreshold_)
+        {
+            scoreThreshold = scoreThreshold_;
+        }
+
+        @Override
+        public Boolean call(Tuple3<String, String, Double> triple)
+        {
+            return (triple._3() >= scoreThreshold);
+        }
+
+        double scoreThreshold;
+    }
+    
+    
     static class XmlCfg
     {
-        String peptidesFilename = "";
         int partitions = 0;
-
+        String peptidesFilename = "";
+        double minSimilarity = Double.NaN;
+        
         public XmlCfg(String xmlFilename) throws Exception
         {
             Element root = Xml.Utils.parseXml(xmlFilename);
 
-            partitions       = Integer.parseInt(Xml.Utils.getChildAttr(root, "spark", "partitions"));
-            peptidesFilename = Xml.Utils.getChildAttr(root, "clustering", "peptidesFilePath");            
+            partitions       = Integer.parseInt(  Xml.Utils.getChildAttr(root, "spark",      "partitions"));
+            peptidesFilename =                    Xml.Utils.getChildAttr(root, "clustering", "peptidesFilePath");            
+            minSimilarity    = Double.parseDouble(Xml.Utils.getChildAttr(root, "clustering", "minSimilarity"));
         }
     }
     
@@ -99,9 +120,9 @@ public class AssignBindersToClusters
 
             JavaRDD<Tuple3<String, String, Double>> simTriples = 
                 pairs.map(new PepSimSparkFunc())
-                     .filter(triple -> { return triple._3() >= 0.8; });
+                     .filter(new TripleScoreFilterSparkFunc(appCfg.minSimilarity));
             simTriples.persist(StorageLevel.MEMORY_AND_DISK());
-            System.out.format("Filtered triples qnty %d \n", simTriples.count());
+            System.out.format("Pairs with similarity above %.2f qnty %d\n", appCfg.minSimilarity, simTriples.count());
             
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = simTriples.mapToPair(triple -> {
