@@ -10,6 +10,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
@@ -22,30 +23,29 @@ public class AssignBindersToClusters
     static class PepSimSparkFunc
                     extends PeptideSimilarity
                     implements Serializable,
-                    Function<Tuple2<String, String>, Tuple3<String, String, Double>>
+                    PairFunction<Tuple2<String, String>, String, Impl.ScoredPeptide>
     {
         @Override
-        public Tuple3<String, String, Double> call(Tuple2<String, String> pepPair)
+        public Tuple2<String, Impl.ScoredPeptide> call(Tuple2<String, String> pepPair)
         {
-            return new Tuple3(pepPair._1, pepPair._2,
-                similarity(pepPair._1, pepPair._2)
-            );
+            double score = similarity(pepPair._1, pepPair._2);
+            return new Tuple2<>(pepPair._1, new Impl.ScoredPeptide(pepPair._2, score));
         }
     }
 
-    static class TripleScoreFilterSparkFunc 
+    static class TupleScoreFilterSparkFunc 
                             implements Serializable,
-                            Function<Tuple3<String, String, Double>,Boolean>
+                            Function<Tuple2<String, Impl.ScoredPeptide>, Boolean>
     {
-        public TripleScoreFilterSparkFunc(double scoreThreshold_)
+        public TupleScoreFilterSparkFunc(double scoreThreshold_)
         {
             scoreThreshold = scoreThreshold_;
         }
 
         @Override
-        public Boolean call(Tuple3<String, String, Double> triple)
+        public Boolean call(Tuple2<String, Impl.ScoredPeptide> tuple)
         {
-            return (triple._3() >= scoreThreshold);
+            return (tuple._2.score >= scoreThreshold);
         }
 
         double scoreThreshold;
@@ -116,24 +116,21 @@ public class AssignBindersToClusters
             System.out.format("Binders qnty %d\n", binders.count());
             JavaRDD<String> clusterCenters = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
 
-            JavaPairRDD<String, String> pairs = clusterCenters.cartesian(binders);
+            JavaPairRDD<String, String> pairs = binders.cartesian(clusterCenters);
 
-            JavaRDD<Tuple3<String, String, Double>> simTriples = 
-                pairs.map(new PepSimSparkFunc())
-                     .filter(new TripleScoreFilterSparkFunc(appCfg.minSimilarity));
-            simTriples.persist(StorageLevel.MEMORY_AND_DISK());
-            System.out.format("Pairs with similarity above %.2f qnty %d\n", appCfg.minSimilarity, simTriples.count());
-            
             // {Bn -> {(Ck, Snk)}}
-            JavaPairRDD<String, Impl.ScoredPeptide> simPairs = simTriples.mapToPair(triple -> {
-                Impl.ScoredPeptide centerWithSim = new Impl.ScoredPeptide(triple._1(), triple._3());
-                return new Tuple2(triple._2(), centerWithSim); 
-            });
+            JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
+                pairs.mapToPair(new PepSimSparkFunc())
+                     .filter(new TupleScoreFilterSparkFunc(appCfg.minSimilarity));
+            simPairs.persist(StorageLevel.MEMORY_AND_DISK());
+            System.out.format("Pairs with similarity above %.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
             
+            // {Bn -> (Ck_max, Snk_max)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
                 (scp1, scp2) -> { return (scp1.score > scp2.score) ? scp1 : scp2; } 
             );
 
+            // {Ck -> (Bn, Snk)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairsInv = simMaxPairs.mapToPair(tuple -> {
                 Impl.ScoredPeptide binderWithSim = new Impl.ScoredPeptide(tuple._1, tuple._2.score);
                 return new Tuple2<>(tuple._2.peptide, binderWithSim);
