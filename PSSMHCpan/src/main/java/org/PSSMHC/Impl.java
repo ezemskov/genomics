@@ -54,27 +54,47 @@ public class Impl
                             implements Serializable, 
                             MapFunction<Row, String>
     {
+        @Override
         public String call(Row idx)
         {
             return Generate(idx.getLong(0));
         };
     }
 
-    public static class Ic50FilterFunc 
+    public static class ScoreFilterSparkFunc 
                             implements Serializable,
                             Function<ScoredPeptide,Boolean>
     {
-        public Ic50FilterFunc(double ic50Threshold_)
+        public ScoreFilterSparkFunc(double scoreThreshold_)
         {
-            ic50Threshold = ic50Threshold_;
+            scoreThreshold = scoreThreshold_;
         }
 
+        @Override
         public Boolean call(ScoredPeptide scPep)
         {
-            return (scPep.ic50 < ic50Threshold);
+            return (scPep.score < scoreThreshold);
         }
 
-        double ic50Threshold;
+        double scoreThreshold;
+    }
+
+    public static class ScoredPeptide implements Serializable
+    {
+        public ScoredPeptide(String peptide, double score) 
+        { 
+            this.peptide = peptide; 
+            this.score = score;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s,%.2f", peptide, score);
+        }
+
+        public String peptide; 
+        public double score; 
     }
 
     public static class XmlUtils

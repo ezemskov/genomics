@@ -16,9 +16,11 @@ final public class PSSMHCSpark
 {
     public static class ScPepRegistrator implements KryoRegistrator 
     { 
+        @Override
         public void registerClasses(Kryo kryo) 
         { 
-          kryo.register(ScoredPeptide.class, new FieldSerializer(kryo, ScoredPeptide.class)); 
+          kryo.register(Impl.ScoredPeptide.class, 
+                new FieldSerializer(kryo, Impl.ScoredPeptide.class)); 
         } 
     } 
         
@@ -39,7 +41,7 @@ final public class PSSMHCSpark
                     .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                     .toJavaRDD();
             
-            JavaRDD<ScoredPeptide> binderPepts;
+            JavaRDD<Impl.ScoredPeptide> binderPepts;
             if (!cfg.doScore)
             {
                 System.out.format("Generated %d peptides\n", pepts.count());
@@ -47,7 +49,7 @@ final public class PSSMHCSpark
             }
             
             binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(Impl.XmlUtils.firstOrDef(args)))
-                               .filter(new Impl.Ic50FilterFunc(cfg.ic50Threshold));
+                               .filter(new Impl.ScoreFilterSparkFunc(cfg.ic50Threshold));
                                     
             if (cfg.doBinderPersist)
             {
