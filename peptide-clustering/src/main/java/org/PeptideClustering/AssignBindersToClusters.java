@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.List;
 import org.PSSMHC.Impl;
+import org.PSSMHC.Xml;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -39,10 +40,10 @@ public class AssignBindersToClusters
 
         public XmlCfg(String xmlFilename) throws Exception
         {
-            Element root = Impl.XmlUtils.parseXml(xmlFilename);
+            Element root = Xml.Utils.parseXml(xmlFilename);
 
-            partitions       = Integer.parseInt(Impl.XmlUtils.getChildAttr(root, "spark", "partitions"));
-            peptidesFilename = Impl.XmlUtils.getChildAttr(root, "clustering", "peptidesFilePath");            
+            partitions       = Integer.parseInt(Xml.Utils.getChildAttr(root, "spark", "partitions"));
+            peptidesFilename = Xml.Utils.getChildAttr(root, "clustering", "peptidesFilePath");            
         }
     }
     
@@ -79,14 +80,14 @@ public class AssignBindersToClusters
             JavaSparkContext jsc = new JavaSparkContext(conf);
             SQLContext sqlc = new SQLContext(jsc);
 
-            Impl.XmlCfg pssmhcCfg = new Impl.XmlCfg(Impl.XmlUtils.firstOrDef(args));
-            XmlCfg appCfg = new XmlCfg(Impl.XmlUtils.firstOrDef(args));
+            Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
+            XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
 
             JavaRDD<String> binders = 
                 sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
                 .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                 .toJavaRDD()
-                .map(new Impl.PSSMHCpanSparkFunc(Impl.XmlUtils.firstOrDef(args)))
+                .map(new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args)))
                 .filter(new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold))
                 .map(scp -> {return scp.peptide;});
             

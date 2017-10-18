@@ -4,7 +4,7 @@ import info.debatty.spark.kmedoids.Clusterer;
 import info.debatty.spark.kmedoids.Solution;
 import info.debatty.spark.kmedoids.budget.TrialsBudget;
 import info.debatty.spark.kmedoids.neighborgenerator.ClaransNeighborGenerator;
-import org.PSSMHC.Impl;
+import org.PSSMHC.Xml;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -19,14 +19,14 @@ public class PeptideClusteringMain
         
         public XmlCfg(String xmlFilename) throws Exception
         {
-            Element root = Impl.XmlUtils.parseXml(xmlFilename);
-            Element elem = Impl.XmlUtils.getChildElem(root, "clustering");
+            Element root = Xml.Utils.parseXml(xmlFilename);
+            Element elem = Xml.Utils.getChildElem(root, "clustering");
             if (elem == null) { return; }
             
             peptidesFilename = elem.getAttribute("peptidesFilePath");
             clustersQnty     = Integer.parseInt(elem.getAttribute("clustersQnty"));
             maxTrials        = Integer.parseInt(elem.getAttribute("maxTrials"));
-            partitions       = Integer.parseInt(Impl.XmlUtils.getChildAttr(root, "spark", "partitions"));
+            partitions       = Integer.parseInt(Xml.Utils.getChildAttr(root, "spark", "partitions"));
         }
     }
     
@@ -34,7 +34,7 @@ public class PeptideClusteringMain
     {
         try
         {
-            XmlCfg appCfg = new XmlCfg(Impl.XmlUtils.firstOrDef(args));
+            XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
 
             SparkConf conf = new SparkConf()
                     .setAppName("SparkPeptideClustering");

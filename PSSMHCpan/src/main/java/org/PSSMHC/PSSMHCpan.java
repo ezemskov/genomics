@@ -12,11 +12,13 @@ class WeightMatrix extends ArrayList<WeightMatrixColumn> implements Serializable
 
 class AllelePair
 {
+    @Override
     public int hashCode()
     {
         return String.format("%s_%d", alName, pepLength).hashCode();
     }
 
+    @Override
     public boolean equals(Object obj)
     {
         AllelePair ap = (AllelePair)obj;
@@ -32,13 +34,13 @@ class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
 class Consts
 {
-    public static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
+    public static final String alphabet = "ACDEFGHIKLMNPQRSTVWY";
     public static int aLen = alphabet.length();
 }
 
 class PSSMParser
 {
-    private static String alphabetRegex = "[" + Consts.alphabet + "]+";
+    private static final String alphabetRegex = "[" + Consts.alphabet + "]+";
         
     //filePath is pssm_file.list
     //ap is a 'allele name/length' pair
@@ -127,16 +129,16 @@ class PSSMParser
 
 class PSSMHCpan implements Serializable
 {
-    private static double score_max = 0.8;
-    private static double score_min = 0.8 * (1 - Math.log(50000) / Math.log(500));
-    private static double score_range = score_max - score_min;
+    private static final double ScoreMax = 0.8;
+    private static final double ScoreMin = 0.8 * (1 - Math.log(50000) / Math.log(500));
+    private static final double ScoreRange = ScoreMax - ScoreMin;
     
     protected WeightMatrix pssm = null;
     
     PSSMHCpan(String xmlFilename) throws Exception
     {
-        Element root = Impl.XmlUtils.parseXml(xmlFilename);
-        Element elem = Impl.XmlUtils.getChildElem(root, "PSSMHC");
+        Element root = Xml.Utils.parseXml(xmlFilename);
+        Element elem = Xml.Utils.getChildElem(root, "PSSMHC");
         if (elem == null) { return; }
         
         AllelePair ap = new AllelePair();
@@ -166,8 +168,8 @@ class PSSMHCpan implements Serializable
         }
 
         score = score / peptide.length();
-        score = Math.max(Math.min(score, score_max), score_min);
+        score = Math.max(Math.min(score, ScoreMax), ScoreMin);
 
-        return Math.pow(50000, (score_max - score)/score_range);
+        return Math.pow(50000, (ScoreMax - score)/ScoreRange);
     }
 }
