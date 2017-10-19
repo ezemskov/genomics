@@ -85,18 +85,27 @@ public class AssignBindersToClusters
 
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
-
+            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
+            Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
+            
             JavaRDD<String> binders = 
                 sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
                 .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                 .toJavaRDD()
-                .map(new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args)))
-                .filter(new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold))
+                .map(pssmhcSparkFunc)
+                .filter(ic50FilterSparkFunc)
                 .map(scp -> {return scp.peptide;});
             
             binders.persist(StorageLevel.MEMORY_AND_DISK());
-            System.out.format("Binders qnty %d\n", binders.count());
-            JavaRDD<String> clusterCenters = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
+            System.out.format("Binders with IC50<%d qnty %d\n", pssmhcCfg.ic50Threshold, binders.count());
+            
+            JavaRDD<String> clusterCenters = 
+                jsc.textFile(appCfg.peptidesFilename, appCfg.partitions)
+                   .map(pssmhcSparkFunc)
+                   .filter(ic50FilterSparkFunc)
+                   .map(scp -> { return scp.peptide; });
+
+            System.out.format("Cluster centers with IC50<%d qnty %d\n", pssmhcCfg.ic50Threshold, clusterCenters.count());
 
             JavaPairRDD<String, String> pairs = binders.cartesian(clusterCenters);
 
@@ -105,7 +114,7 @@ public class AssignBindersToClusters
                 pairs.mapToPair(new PepSimSparkFunc().<PepSimSparkFunc>SetMatrix(SubstMatrices.get(appCfg.matrix)))
                      .filter(new TupleScoreFilterSparkFunc(appCfg.minSimilarity));
             simPairs.persist(StorageLevel.MEMORY_AND_DISK());
-            System.out.format("Pairs with similarity above %.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
+            System.out.format("Pairs with similarity>%.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
             
             // {Bn -> (Ck_max, Snk_max)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
