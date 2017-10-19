@@ -8,28 +8,9 @@ import org.PSSMHC.Xml;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.w3c.dom.Element;
 
 public class PeptideClusteringMain
 {
-    public static class XmlCfg
-    {
-        int partitions, clustersQnty, maxTrials;
-        String peptidesFilename = "";
-        
-        public XmlCfg(String xmlFilename) throws Exception
-        {
-            Element root = Xml.Utils.parseXml(xmlFilename);
-            Element elem = Xml.Utils.getChildElem(root, "clustering");
-            if (elem == null) { return; }
-            
-            peptidesFilename = elem.getAttribute("peptidesFilePath");
-            clustersQnty     = Integer.parseInt(elem.getAttribute("clustersQnty"));
-            maxTrials        = Integer.parseInt(elem.getAttribute("maxTrials"));
-            partitions       = Integer.parseInt(Xml.Utils.getChildAttr(root, "spark", "partitions"));
-        }
-    }
-    
     public static void main(String[] args) throws Exception 
     {
         try

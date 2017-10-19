@@ -50,24 +50,7 @@ public class AssignBindersToClusters
 
         double scoreThreshold;
     }
-    
-    
-    static class XmlCfg
-    {
-        int partitions = 0;
-        String peptidesFilename = "";
-        double minSimilarity = Double.NaN;
-        
-        public XmlCfg(String xmlFilename) throws Exception
-        {
-            Element root = Xml.Utils.parseXml(xmlFilename);
-
-            partitions       = Integer.parseInt(  Xml.Utils.getChildAttr(root, "spark",      "partitions"));
-            peptidesFilename =                    Xml.Utils.getChildAttr(root, "clustering", "peptidesFilePath");            
-            minSimilarity    = Double.parseDouble(Xml.Utils.getChildAttr(root, "clustering", "minSimilarity"));
-        }
-    }
-    
+      
     static <T> void FormatMap(Map<String, T> map)
     {
         for (Map.Entry<String, T> elem : map.entrySet())
