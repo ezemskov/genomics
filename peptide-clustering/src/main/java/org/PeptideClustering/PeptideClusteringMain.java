@@ -22,7 +22,7 @@ public class PeptideClusteringMain
             JavaSparkContext jsc = new JavaSparkContext(conf);
             JavaRDD<String> pepts = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
 
-            PeptideSimilarity simCalc = new PeptideSimilarity().SetMatrix(new SubstMatrices.Blosum62());
+            PeptideSimilarity simCalc = new PeptideSimilarity().SetMatrix(SubstMatrices.get(appCfg.matrix));
             Clusterer<String> clusterer = new Clusterer<>();
             clusterer.setK(appCfg.clustersQnty);
             clusterer.setSimilarity(simCalc);

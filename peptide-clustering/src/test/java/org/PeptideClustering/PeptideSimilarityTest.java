@@ -14,8 +14,10 @@ public class PeptideSimilarityTest
     static String oxytocin = "CYIQNCPLG";
     
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
+        //alternatively : 
+        //simCalc = new PeptideSimilarity().SetMatrix(SubstMatrices.get("blosum62"));
         simCalc = new PeptideSimilarity().SetMatrix(new SubstMatrices.Blosum62());
     }
 

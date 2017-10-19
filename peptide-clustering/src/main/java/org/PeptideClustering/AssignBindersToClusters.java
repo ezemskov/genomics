@@ -14,7 +14,6 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.storage.StorageLevel;
-import org.w3c.dom.Element;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -103,7 +102,7 @@ public class AssignBindersToClusters
 
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
-                pairs.mapToPair(new PepSimSparkFunc().<PepSimSparkFunc>SetMatrix(new SubstMatrices.Blosum62()))
+                pairs.mapToPair(new PepSimSparkFunc().<PepSimSparkFunc>SetMatrix(SubstMatrices.get(appCfg.matrix)))
                      .filter(new TupleScoreFilterSparkFunc(appCfg.minSimilarity));
             simPairs.persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity above %.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());

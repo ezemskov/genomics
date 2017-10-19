@@ -7,6 +7,7 @@ public class XmlCfg
 {
     int partitions = 0, clustersQnty = 0, maxTrials = 0;
     String peptidesFilename = "";
+    String matrix = "";
     double minSimilarity = Double.NaN;
 
     public XmlCfg(String xmlFilename) throws Exception
@@ -16,6 +17,7 @@ public class XmlCfg
         if (elem == null) { return; }
 
         peptidesFilename =                    elem.getAttribute("peptidesFilePath");
+        matrix           =                    elem.getAttribute("matrix");
         clustersQnty     = Integer.parseInt(  elem.getAttribute("clustersQnty"));
         maxTrials        = Integer.parseInt(  elem.getAttribute("maxTrials"));
         minSimilarity    = Double.parseDouble(elem.getAttribute("minSimilarity"));

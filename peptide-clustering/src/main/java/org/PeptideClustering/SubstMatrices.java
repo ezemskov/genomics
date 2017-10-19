@@ -1,10 +1,28 @@
 package org.PeptideClustering;
 
 import java.io.Serializable;
+import java.util.HashMap;
 
 
 public class SubstMatrices
 {
+    static final protected HashMap<String, SubstMatrix> matrices = new HashMap<String, SubstMatrix>();
+
+    public static SubstMatrix get(String name) throws Exception
+    {
+        SubstMatrix res = matrices.get(name.toLowerCase());
+        if (res == null)
+        {
+            throw new Exception("Valid matrix names are " + matrices.keySet().toString());
+        }
+        return res;
+    }
+
+    static 
+    { 
+        matrices.put("blosum62", new Blosum62()); 
+    }    
+    
     static class Blosum62 extends SubstMatrix implements Serializable
     {
         static double[][] vals = new double[][] {
@@ -30,6 +48,6 @@ public class SubstMatrices
           { -1.7640, -2.4071, -3.0650, -2.0205,  2.9391, -3.0398,  1.6926, -1.3314, -1.8200, -1.0621, -0.9949, -2.0818, -2.9198, -1.4211, -1.6939, -1.6858, -1.6060, -1.2075,  2.1542,  6.5950}
         };
 
-        Blosum62() { super(vals, "blosum62"); }
+        public Blosum62() { super(vals); }
     }
 }

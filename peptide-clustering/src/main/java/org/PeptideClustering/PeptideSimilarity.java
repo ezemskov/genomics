@@ -10,14 +10,10 @@ class Consts
     public static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
 }
 class SubstMatrixRow extends HashMap<Character, Double>         implements Serializable {}
-class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Serializable
+class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Serializable 
 {
-    private String name = "";
-    
-    public SubstMatrix(double[][] vals, String name_)
+    public SubstMatrix(double[][] vals)
     {
-        name = name_;
-        
         String ExcMsg =  "Wrong substitution matrix size";
         if (vals.length != Consts.alphabet.length()) 
         {
@@ -39,16 +35,6 @@ class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Seria
             
             put(Consts.alphabet.charAt(i), row);
         }
-    }
-
-    public double get(Character aa1, Character aa2)
-    {
-        return get(aa1).get(aa2);
-    }
-    
-    public String getName() 
-    {
-        return name;
     }
 }
 
@@ -81,9 +67,9 @@ class PeptideSimilarity implements Similarity<String>
         {
             char ch1 = p1.charAt(i);
             char ch2 = p2.charAt(i);
-            sc12 += PosWeights[i] * SM.get(ch1, ch2);
-            sc11 += PosWeights[i] * SM.get(ch1, ch1);
-            sc22 += PosWeights[i] * SM.get(ch2, ch2);
+            sc12 += PosWeights[i] * SM.get(ch1).get(ch2);
+            sc11 += PosWeights[i] * SM.get(ch1).get(ch1);
+            sc22 += PosWeights[i] * SM.get(ch2).get(ch2);
         }
             
         return 2*sc12/(sc11 + sc22);
