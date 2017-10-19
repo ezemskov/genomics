@@ -103,7 +103,7 @@ public class AssignBindersToClusters
 
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
-                pairs.mapToPair(new PepSimSparkFunc())
+                pairs.mapToPair(new PepSimSparkFunc().<PepSimSparkFunc>SetMatrix(new SubstMatrices.Blosum62()))
                      .filter(new TupleScoreFilterSparkFunc(appCfg.minSimilarity));
             simPairs.persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity above %.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());

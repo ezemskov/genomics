@@ -3,6 +3,7 @@ package org.PeptideClustering;
 import org.junit.Before;
 import org.junit.Test;
 import java.util.Random;
+import java.lang.AssertionError;
 import org.PSSMHC.PeptideGen;
 import static org.junit.Assert.*;
 
@@ -15,7 +16,13 @@ public class PeptideSimilarityTest
     @Before
     public void setUp()
     {
-        simCalc = new PeptideSimilarity();
+        simCalc = new PeptideSimilarity().SetMatrix(new SubstMatrices.Blosum62());
+    }
+
+    @Test(expected = AssertionError.class)
+    public void testDefaultInit()
+    {
+        assertEquals(1.0, new PeptideSimilarity().similarity(oxytocin, oxytocin), Threshold);
     }
 
     @Test

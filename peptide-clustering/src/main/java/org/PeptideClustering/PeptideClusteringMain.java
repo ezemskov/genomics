@@ -22,15 +22,16 @@ public class PeptideClusteringMain
             JavaSparkContext jsc = new JavaSparkContext(conf);
             JavaRDD<String> pepts = jsc.textFile(appCfg.peptidesFilename, appCfg.partitions);
 
+            PeptideSimilarity simCalc = new PeptideSimilarity().SetMatrix(new SubstMatrices.Blosum62());
             Clusterer<String> clusterer = new Clusterer<>();
             clusterer.setK(appCfg.clustersQnty);
-            clusterer.setSimilarity(new PeptideSimilarity());
+            clusterer.setSimilarity(simCalc);
             clusterer.setNeighborGenerator(new ClaransNeighborGenerator<>());
             clusterer.setBudget(new TrialsBudget(appCfg.maxTrials));
             Solution<String> res = clusterer.cluster(pepts);
 
             SolutionClusters<String> res2 = new SolutionClusters<>();
-            res2.setSimilarity(new PeptideSimilarity());
+            res2.setSimilarity(simCalc);
             res2.AssignElemsToClusters(pepts.collect(), res.getMedoids());
 
             System.out.println(res.toString());

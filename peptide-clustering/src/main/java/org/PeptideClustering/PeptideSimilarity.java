@@ -9,12 +9,15 @@ class Consts
 {
     public static String alphabet = "ACDEFGHIKLMNPQRSTVWY";
 }
-
 class SubstMatrixRow extends HashMap<Character, Double>         implements Serializable {}
 class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Serializable
 {
-    public SubstMatrix(double[][] vals)
+    private String name = "";
+    
+    public SubstMatrix(double[][] vals, String name_)
     {
+        name = name_;
+        
         String ExcMsg =  "Wrong substitution matrix size";
         if (vals.length != Consts.alphabet.length()) 
         {
@@ -42,20 +45,36 @@ class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Seria
     {
         return get(aa1).get(aa2);
     }
+    
+    public String getName() 
+    {
+        return name;
+    }
 }
 
-public class PeptideSimilarity implements Similarity<String> 
+class PeptideSimilarity implements Similarity<String> 
 {
     private static String alphabetRegex = "[" + Consts.alphabet + "]+";
     private static double[] PosWeights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    private static SubstMatrix SM = new SubstMatrices.Blosum62();
-        
+    private SubstMatrix SM = null;
+
+    public PeptideSimilarity()
+    {}
+    
+    public <T extends PeptideSimilarity> T SetMatrix(SubstMatrix SM_)
+    {
+        this.SM = SM_;
+        return (T)this;
+    }
+
+    @Override
     public double similarity(String p1, String p2)
     {
         assert(p1.matches(alphabetRegex) && 
                p2.matches(alphabetRegex) &&
                (p1.length() == p2.length()) &&
-               (PosWeights.length >= p1.length()));
+               (PosWeights.length >= p1.length()) && 
+               (SM != null));
         
         double sc12 = 0.0, sc11 = 0.0, sc22 = 0.0;
         for (int i=0; i<p1.length(); ++i)
@@ -69,4 +88,5 @@ public class PeptideSimilarity implements Similarity<String>
             
         return 2*sc12/(sc11 + sc22);
     }
+    
 }
