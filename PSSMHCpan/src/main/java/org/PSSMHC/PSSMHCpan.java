@@ -7,7 +7,10 @@ import java.io.BufferedReader;
 import java.io.Serializable;
 import org.w3c.dom.Element;
 
-class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable {}
+class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable
+{
+    WeightMatrixColumn() { super(Consts.aLen, 1.0f); }
+}
 class WeightMatrix extends ArrayList<WeightMatrixColumn> implements Serializable {}
 
 class AllelePair
@@ -35,7 +38,7 @@ class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 class Consts
 {
     public static final String alphabet = "ACDEFGHIKLMNPQRSTVWY";
-    public static int aLen = alphabet.length();
+    public static final int aLen = alphabet.length();
 }
 
 class PSSMParser
@@ -151,17 +154,13 @@ class PSSMHCpan implements Serializable
         
     public double ScoreOnePeptide(String peptide)
     {
-        if (pssm == null)
-        {
-            throw new RuntimeException("PSSM is not initialized");
-        }
+        assert (pssm != null) : "PSSM is not initialized";
+
         double score = 0;
         for (int ch_pos=0; ch_pos<peptide.length(); ch_pos++)
         {
             Map<Character, Double> weightRow = pssm.get(ch_pos);
-            if(weightRow == null) {
-                throw new RuntimeException("Invalid PSSM width");
-            }
+            assert (weightRow != null) : "Invalid PSSM width";
             Double weight = weightRow.get(peptide.charAt(ch_pos));
             assert(weight != null); //assumes PSSM is parsed and peptide is validated
             score += weight;
