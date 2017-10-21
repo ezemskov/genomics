@@ -24,10 +24,17 @@ public class AssignBindersToClusters
                     implements Serializable,
                     PairFunction<Tuple2<String, String>, String, Impl.ScoredPeptide>
     {
+        private final double dissimMax;
+        
+        PepSimSparkFunc(double dissimMax_)
+        {
+            dissimMax = dissimMax_;
+        }
+            
         @Override
         public Tuple2<String, Impl.ScoredPeptide> call(Tuple2<String, String> pepPair)
         {
-            double score = similarity(pepPair._1, pepPair._2);
+            double score = dissimilarity(pepPair._1, pepPair._2, dissimMax);
             return new Tuple2<>(pepPair._1, new Impl.ScoredPeptide(pepPair._2, score));
         }
     }
@@ -44,7 +51,8 @@ public class AssignBindersToClusters
         @Override
         public Boolean call(Tuple2<String, Impl.ScoredPeptide> tuple)
         {
-            return (tuple._2.score >= scoreThreshold);
+            return !Double.isNaN(tuple._2.score) && 
+                   (tuple._2.score < scoreThreshold);
         }
 
         double scoreThreshold;
@@ -109,21 +117,24 @@ public class AssignBindersToClusters
 
             JavaPairRDD<String, String> pairs = binders.cartesian(clusterCenters);
 
+            PepSimSparkFunc simFunc = new PepSimSparkFunc(1/appCfg.minSimilarity);
+            simFunc.SetMatrix(SubstMatrices.get(appCfg.matrix));
+                
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
-                pairs.mapToPair(new PepSimSparkFunc().<PepSimSparkFunc>SetMatrix(SubstMatrices.get(appCfg.matrix)))
-                     .filter(new TupleScoreFilterSparkFunc(appCfg.minSimilarity));
+                pairs.mapToPair(simFunc)
+                     .filter(new TupleScoreFilterSparkFunc(1/appCfg.minSimilarity));
             simPairs.persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity>%.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
             
             // {Bn -> (Ck_max, Snk_max)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
-                (scp1, scp2) -> { return (scp1.score > scp2.score) ? scp1 : scp2; } 
+                (scp1, scp2) -> { return (scp1.score < scp2.score) ? scp1 : scp2; } 
             );
 
             // {Ck -> (Bn, Snk)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairsInv = simMaxPairs.mapToPair(tuple -> {
-                Impl.ScoredPeptide binderWithSim = new Impl.ScoredPeptide(tuple._1, tuple._2.score);
+                Impl.ScoredPeptide binderWithSim = new Impl.ScoredPeptide(tuple._1, 1.0/tuple._2.score);
                 return new Tuple2<>(tuple._2.peptide, binderWithSim);
             });
             simMaxPairsInv = simMaxPairsInv.coalesce(appCfg.partitions);
