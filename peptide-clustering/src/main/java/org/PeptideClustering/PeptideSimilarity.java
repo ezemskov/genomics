@@ -110,4 +110,19 @@ class PeptideSimilarity implements Similarity<String>
 
         return sc11_22 / sc12;
     }
+    
+    public static int posDiff(String p1, String p2)
+    {
+        assert(p1.length() == p2.length());
+        int res = 0;
+        for (int i=0; i<p1.length(); ++i)
+        {
+            if (p1.charAt(i) != p2.charAt(i))
+            {
+                res += 1;
+            }
+        }
+        return res;
+    }
+    
 }
