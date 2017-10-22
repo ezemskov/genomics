@@ -38,25 +38,6 @@ public class AssignBindersToClusters
             return new Tuple2<>(pepPair._1, new Impl.ScoredPeptide(pepPair._2, score));
         }
     }
-
-    static class TupleScoreFilterSparkFunc 
-                            implements Serializable,
-                            Function<Tuple2<String, Impl.ScoredPeptide>, Boolean>
-    {
-        public TupleScoreFilterSparkFunc(double scoreThreshold_)
-        {
-            scoreThreshold = scoreThreshold_;
-        }
-
-        @Override
-        public Boolean call(Tuple2<String, Impl.ScoredPeptide> tuple)
-        {
-            return !Double.isNaN(tuple._2.score) && 
-                   (tuple._2.score < scoreThreshold);
-        }
-
-        double scoreThreshold;
-    }
       
     static <T> void FormatMap(Map<String, T> map)
     {
@@ -123,8 +104,8 @@ public class AssignBindersToClusters
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
                 pairs.mapToPair(simFunc)
-                     .filter(new TupleScoreFilterSparkFunc(1/appCfg.minSimilarity));
-            simPairs.persist(StorageLevel.MEMORY_AND_DISK());
+                     .filter(tuple -> { return !Double.isNaN(tuple._2.score); })
+                     .persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity>%.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
             
             // {Bn -> (Ck_max, Snk_max)}

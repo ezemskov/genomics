@@ -101,13 +101,7 @@ class PeptideSimilarity implements Similarity<String>
         {
             char ch1 = p1.charAt(i);
             char ch2 = p2.charAt(i);
-            sc11_22 += Consts.PosWeights[i] * SM.get(ch1).get(ch1);            
-            if (sc11_22 >= sumMax) 
-            { 
-                return Double.NaN; 
-            }
-
-            sc11_22 += Consts.PosWeights[i] * SM.get(ch2).get(ch2);
+            sc11_22 += Consts.PosWeights[i] * (SM.get(ch1).get(ch1) + SM.get(ch2).get(ch2));            
             if (sc11_22 >= sumMax) 
             { 
                 return Double.NaN; 
