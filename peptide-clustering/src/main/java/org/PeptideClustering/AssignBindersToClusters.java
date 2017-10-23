@@ -121,6 +121,7 @@ public class AssignBindersToClusters
                     })
                       .coalesce(appCfg.partitions)
                       .groupByKey()
+                      .coalesce(1)
                       .saveAsTextFile("output-diffs");
             
             // {Bn -> (Ck_max, Snk_max)}
@@ -140,7 +141,9 @@ public class AssignBindersToClusters
             System.out.format("Clusters qnty %d\n", clustersCount.size());
             FormatMap(clustersCount);
 
-            JavaPairRDD<String, Iterable<Impl.ScoredPeptide>> simMaxPairsGrp = simMaxPairsInv.groupByKey();
+            JavaPairRDD<String, Iterable<Impl.ScoredPeptide>> simMaxPairsGrp = 
+                simMaxPairsInv.groupByKey()
+                              .coalesce(1);
             simMaxPairsGrp.saveAsTextFile("output-clusters");
             
             jsc.close();
