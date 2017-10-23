@@ -86,7 +86,8 @@ public class AssignBindersToClusters
                 .map(scp -> {return scp.peptide;});
             
             binders.persist(StorageLevel.MEMORY_AND_DISK());
-            System.out.format("Binders with IC50<%d qnty %d\n", pssmhcCfg.ic50Threshold, binders.count());
+            System.out.format("Binders with IC50<%d qnty %d of %d\n", 
+                pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
             
             JavaRDD<String> clusterCenters = 
                 jsc.textFile(appCfg.peptidesFilename, appCfg.partitions)
@@ -96,11 +97,19 @@ public class AssignBindersToClusters
 
             System.out.format("Cluster centers with IC50<%d qnty %d\n", pssmhcCfg.ic50Threshold, clusterCenters.count());
 
-            JavaPairRDD<String, String> pairs = binders.cartesian(clusterCenters);
-
             PepSimSparkFunc simFunc = new PepSimSparkFunc(1/appCfg.minSimilarity);
             simFunc.SetMatrix(SubstMatrices.get(appCfg.matrix));
-                
+            
+            final int maxPosDiff = PeptideSimilarity.maxPosDiff(appCfg.minSimilarity);
+
+            // {Bn -> Ck}
+            JavaPairRDD<String, String> pairs = 
+                binders.cartesian(clusterCenters)
+                       .filter(tuple -> { 
+                           return PeptideSimilarity.posDiff(tuple._1, tuple._2) <= maxPosDiff; 
+                     }).persist(StorageLevel.MEMORY_AND_DISK());
+            System.out.format("Pairs different by at most %d AA qnty %d\n", maxPosDiff, pairs.count());
+            
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
                 pairs.mapToPair(simFunc)

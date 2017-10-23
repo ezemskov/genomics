@@ -110,7 +110,7 @@ class PeptideSimilarity implements Similarity<String>
 
         return sc11_22 / sc12;
     }
-    
+
     public static int posDiff(String p1, String p2)
     {
         assert(p1.length() == p2.length());
@@ -125,4 +125,14 @@ class PeptideSimilarity implements Similarity<String>
         return res;
     }
     
+    //Maximum (empirical) amount of different amino acids present in 9-meer peptide pair
+    //so it has similarity over similarityBound
+    //Todo : generalize for different matrices and peptide lengths ?
+    public static int maxPosDiff(double similarityBound)
+    {
+        if (similarityBound >= 0.9) { return 2; }
+        if (similarityBound >= 0.8) { return 3; }
+        if (similarityBound >= 0.5) { return 6; }
+        return 9;
+    }
 }
