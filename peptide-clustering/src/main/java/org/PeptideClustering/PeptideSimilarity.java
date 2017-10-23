@@ -131,7 +131,7 @@ class PeptideSimilarity implements Similarity<String>
     public static int maxPosDiff(double similarityBound)
     {
         if (similarityBound >= 0.9) { return 2; }
-        if (similarityBound >= 0.8) { return 3; }
+        if (similarityBound >= 0.8) { return 4; }
         if (similarityBound >= 0.5) { return 6; }
         return 9;
     }
