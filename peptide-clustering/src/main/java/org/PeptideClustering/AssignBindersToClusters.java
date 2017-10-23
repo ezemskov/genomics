@@ -3,6 +3,7 @@ package org.PeptideClustering;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.List;
+import java.util.ArrayList;
 import org.PSSMHC.Impl;
 import org.PSSMHC.Xml;
 import org.apache.spark.SparkConf;
@@ -85,17 +86,19 @@ public class AssignBindersToClusters
                 .filter(ic50FilterSparkFunc)
                 .map(scp -> {return scp.peptide;});
             
-            binders.persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Binders with IC50<%d qnty %d of %d\n", 
                 pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
             
-            JavaRDD<String> clusterCenters = 
+            List<String> clusterCenters = 
                 jsc.textFile(appCfg.peptidesFilename, appCfg.partitions)
                    .map(pssmhcSparkFunc)
                    .filter(ic50FilterSparkFunc)
-                   .map(scp -> { return scp.peptide; });
-
-            System.out.format("Cluster centers with IC50<%d qnty %d\n", pssmhcCfg.ic50Threshold, clusterCenters.count());
+                   .map(scp -> { return scp.peptide; })
+                   .collect();
+            jsc.broadcast(clusterCenters);
+            
+            System.out.format("Cluster centers with IC50<%d qnty %d\n", 
+                pssmhcCfg.ic50Threshold, clusterCenters.size());
 
             PepSimSparkFunc simFunc = new PepSimSparkFunc(1/appCfg.minSimilarity);
             simFunc.SetMatrix(SubstMatrices.get(appCfg.matrix));
@@ -103,11 +106,16 @@ public class AssignBindersToClusters
             final int maxPosDiff = PeptideSimilarity.maxPosDiff(appCfg.minSimilarity);
 
             // {Bn -> Ck}
-            JavaPairRDD<String, String> pairs = 
-                binders.cartesian(clusterCenters)
-                       .filter(tuple -> { 
-                           return PeptideSimilarity.posDiff(tuple._1, tuple._2) <= maxPosDiff; 
-                     }).persist(StorageLevel.MEMORY_AND_DISK());
+            JavaPairRDD<String, String> pairs = binders.flatMapToPair(binder -> {
+                        ArrayList<Tuple2<String, String>> res = new ArrayList<>();
+                        for (String center : clusterCenters) {
+                            res.add(new Tuple2<>(binder, center));
+                        }
+                        return res.iterator();
+                    }).filter(tuple -> { 
+                        return (PeptideSimilarity.posDiff(tuple._1, tuple._2) <= maxPosDiff); 
+                    }).persist(StorageLevel.MEMORY_AND_DISK());
+            
             System.out.format("Pairs different by at most %d AA qnty %d\n", maxPosDiff, pairs.count());
             
             // {Bn -> {(Ck, Snk)}}
