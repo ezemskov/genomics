@@ -123,7 +123,8 @@ public class AssignBindersToClusters
                      .persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity>%.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
             
-            simPairs.mapToPair( tuple -> {
+            String maxDiff = 
+                simPairs.mapToPair( tuple -> {
                         int score = PeptideSimilarity.posDiff(tuple._1, tuple._2.peptide);
                         return new Tuple2<>(tuple._1, new Impl.ScoredPeptide(tuple._2.peptide, score));
                     }).reduceByKey(
@@ -131,13 +132,11 @@ public class AssignBindersToClusters
                     }).mapToPair(tuple -> {
                         Impl.ScoredPeptide binderWithDiff = new Impl.ScoredPeptide(tuple._1, tuple._2.score);
                         return new Tuple2<>(tuple._2.peptide, binderWithDiff);
-                    }).reduceByKey(
-                        (scp1, scp2) -> { return (scp1.score > scp2.score) ? scp1 : scp2; 
-                    })
-                      .coalesce(appCfg.partitions)
-                      .groupByKey()
-                      .coalesce(1)
-                      .saveAsTextFile("output-diffs");
+                    }).reduce(
+                        (val1, val2) -> { return val1._2.score > val2._2.score ? val1 : val2;}
+                    ) .toString();
+            
+            System.out.format("Pair with maximum AA difference %s\n", maxDiff);
             
             // {Bn -> (Ck_max, Snk_max)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
