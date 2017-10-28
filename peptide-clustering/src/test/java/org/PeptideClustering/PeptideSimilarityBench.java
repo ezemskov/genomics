@@ -56,7 +56,6 @@ public class PeptideSimilarityBench
         benchmark((p1, p2) -> { return simCalc.similarity(p1, p2); }, true);
     }
 
-/*    
     @Test
     public void benchmarkDissimilarity1()
     {
@@ -64,27 +63,6 @@ public class PeptideSimilarityBench
         benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1/0.1); }, true);
     }
 
-    @Test
-    public void benchmarkDissimilarity2()
-    {
-        System.out.println("dissimilarity 0.2");
-        benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1/0.2); }, true);
-    }
-
-    @Test
-    public void benchmarkDissimilarity5()
-    {
-        System.out.println("dissimilarity 0.5");
-        benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1.0/0.5); }, true);
-    }
-
-    @Test
-    public void benchmarkDissimilarity7()
-    {
-        System.out.println("dissimilarity 0.7");
-        benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1.0/0.7); }, true);
-    }
-    
     @Test
     public void benchmarkDissimilarity8()
     {
@@ -98,7 +76,7 @@ public class PeptideSimilarityBench
         System.out.println("dissimilarity 0.9");
         benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1.0/0.9); }, true);
     }
-*/    
+
     interface IPeptideDistance {
        public double call(String p1, String p2);
     }
@@ -108,7 +86,7 @@ public class PeptideSimilarityBench
         Random randGen = new Random();
         PeptideGen pepGen = new PeptideGen();
         
-        final int IterationsCount = 5000000;
+        final int IterationsCount = 1000000;
         final long startTime = System.currentTimeMillis();
         int interruptedCalcCount = 0;
         

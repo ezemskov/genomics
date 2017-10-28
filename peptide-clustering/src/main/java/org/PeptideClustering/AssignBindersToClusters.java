@@ -86,8 +86,7 @@ public class AssignBindersToClusters
                 .filter(ic50FilterSparkFunc)
                 .map(scp -> {return scp.peptide;});
             
-            System.out.format("Binders with IC50<%d qnty %d of %d\n", 
-                pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
+            //System.out.format("Binders with IC50<%d qnty %d of %d\n",  pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
             
             List<String> clusterCenters = 
                 jsc.textFile(appCfg.peptidesFilename, appCfg.partitions)
@@ -114,10 +113,10 @@ public class AssignBindersToClusters
                         return res.iterator();
                     }).filter(tuple -> { 
                         return (PeptideSimilarity.posDiff(tuple._1, tuple._2) <= maxPosDiff); 
-                    }).persist(StorageLevel.MEMORY_AND_DISK());
+                    });
             
-            System.out.format("Pairs different by at most %d AA qnty %d\n", maxPosDiff, pairs.count());
-            
+            //pairs.persist(StorageLevel.MEMORY_AND_DISK());
+            //System.out.format("Pairs different by at most %d AA qnty %d\n", maxPosDiff, pairs.count());
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
                 pairs.mapToPair(simFunc)
