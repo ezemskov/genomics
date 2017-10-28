@@ -3,12 +3,8 @@ package org.PeptideClustering;
 import org.junit.Before;
 import org.junit.Test;
 import java.util.Random;
-import java.lang.AssertionError;
 import org.PSSMHC.PeptideGen;
-import static org.junit.Assert.*;
-import java.util.stream.LongStream;
 import java.lang.System;
-
 
 public class PeptideSimilarityBench
 {
@@ -27,56 +23,22 @@ public class PeptideSimilarityBench
         benchmark((p1, p2) -> { return 0.0; }, false);
     }
 
-    @Test
-    public void benchmarkPosDiff1()
-    {
-        System.out.println("posDiff cast");
-        benchmark((p1, p2) -> { return (double)PeptideSimilarity.posDiff(p1, p2); }, false);
-    }
-    
-    @Test
-    public void benchmarkPosDiff2()
-    {
-        System.out.println("posDiff discard");
-        benchmark((p1, p2) -> { int res = PeptideSimilarity.posDiff(p1, p2); return 0.0; }, false);
-    }
-
-    @Test
-    public void benchmarkGenOnly()
-    {
-        System.out.println("generate only");
-        benchmark((p1, p2) -> { return Double.NaN; }, true);
-    }
-
 
     @Test
     public void benchmarkSimilarity()
     {
-        System.out.println("similarity");
-        benchmark((p1, p2) -> { return simCalc.similarity(p1, p2); }, true);
+        System.out.println("similarity only");
+        benchmark((p1, p2) -> { return simCalc.similarity(p1, p2); }, false);
     }
 
     @Test
-    public void benchmarkDissimilarity1()
+    public void benchmarkNW()
     {
-        System.out.println("dissimilarity 0.1");
-        benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1/0.1); }, true);
+        System.out.println("NeedlemanWunsch");
+        benchmark((p1, p2) -> { return NeedlemanWunsch.calcNWscore(p1, p2).score; }, false);
     }
 
-    @Test
-    public void benchmarkDissimilarity8()
-    {
-        System.out.println("dissimilarity 0.8");
-        benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1.0/0.8); }, true);
-    }
-
-    @Test
-    public void benchmarkDissimilarity9()
-    {
-        System.out.println("dissimilarity 0.9");
-        benchmark((p1, p2) -> { return simCalc.dissimilarity(p1, p2, 1.0/0.9); }, true);
-    }
-
+    
     interface IPeptideDistance {
        public double call(String p1, String p2);
     }
