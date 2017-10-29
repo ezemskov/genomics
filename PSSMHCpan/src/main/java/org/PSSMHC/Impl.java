@@ -20,6 +20,13 @@ import org.w3c.dom.Node;
 
 public class Impl
 {
+    public static class Consts
+    {
+        public static final String alphabet = "ACDEFGHIKLMNPQRSTVWY";
+        public static final int aLen = alphabet.length();
+        public static final String alphabetRegex = "[" + Consts.alphabet + "]+";
+    }
+
     public static class PSSMHCpanSparkFunc 
                             extends PSSMHCpan
                             implements Serializable,

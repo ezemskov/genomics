@@ -2,7 +2,42 @@ package org.PeptideClustering;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import org.PSSMHC.Impl;
 
+class SubstMatrixRow extends HashMap<Character, Double>         implements Serializable
+{
+    SubstMatrixRow() { super(Impl.Consts.aLen, 1.0f); }
+}
+
+class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Serializable 
+{
+    public SubstMatrix(double[][] vals)
+    {
+        super(Impl.Consts.aLen, 1.0f);
+        
+        final String ExcMsg =  "Wrong substitution matrix size";
+        if (vals.length != Impl.Consts.aLen) 
+        {
+            throw new RuntimeException(ExcMsg);
+        }
+
+        for (int i=0; i<vals.length; ++i) 
+        {
+            if (vals[i].length != Impl.Consts.aLen) 
+            {
+                throw new RuntimeException(ExcMsg);
+            }
+            
+            SubstMatrixRow row = new SubstMatrixRow();
+            for (int j=0; j<vals.length; ++j) 
+            {
+                row.put(Impl.Consts.alphabet.charAt(j), vals[i][j]);
+            }
+            
+            put(Impl.Consts.alphabet.charAt(i), row);
+        }
+    }
+}
 
 public class SubstMatrices
 {

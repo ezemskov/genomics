@@ -43,8 +43,6 @@ class Consts
 
 class PSSMParser
 {
-    private static final String alphabetRegex = "[" + Consts.alphabet + "]+";
-        
     //filePath is pssm_file.list
     //ap is a 'allele name/length' pair
     public static WeightMatrix FindAndParsePSSM(String pssmListPath, AllelePair ap)

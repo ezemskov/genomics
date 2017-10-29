@@ -5,7 +5,7 @@ import java.lang.StringBuilder;
 public class PeptideGen
 {
     private static int pepLen = 9;
-    private static long maxIndex = (long)Math.pow(Consts.aLen, pepLen) - 1; //20^9 - 1
+    private static long maxIndex = (long)Math.pow(Impl.Consts.aLen, pepLen) - 1; //20^9 - 1
     
     private StringBuilder lastPepStr = null;
     private int[]  lastPepCharPos = new int[pepLen];
@@ -33,14 +33,14 @@ public class PeptideGen
         int idxChar = pepLen-1;
         //find left bound of '....YYY' chars sequence, starting from right, 
         //and set it to '....AAAA' (i.e. perform rollover)
-        for (; (idxChar >= 0) && (lastPepCharPos[idxChar] == Consts.aLen-1); --idxChar)
+        for (; (idxChar >= 0) && (lastPepCharPos[idxChar] == Impl.Consts.aLen-1); --idxChar)
         {
             lastPepCharPos[idxChar] = 0;
-            lastPepStr.setCharAt(idxChar, Consts.alphabet.charAt(0));
+            lastPepStr.setCharAt(idxChar, Impl.Consts.alphabet.charAt(0));
         }
         
         lastPepCharPos[idxChar] += 1;
-        lastPepStr.setCharAt(idxChar, Consts.alphabet.charAt(lastPepCharPos[idxChar]));
+        lastPepStr.setCharAt(idxChar, Impl.Consts.alphabet.charAt(lastPepCharPos[idxChar]));
         
         return lastPepStr.toString();
     }
@@ -50,12 +50,12 @@ public class PeptideGen
         lastIdxPep = idxPep;
         
         //index of leftmost char to be incremented, starting from right ('least significant char')
-        int idxAm = (int)Math.floor(Math.log(idxPep)/Math.log(Consts.aLen));  
+        int idxAm = (int)Math.floor(Math.log(idxPep)/Math.log(Impl.Consts.aLen));  
         long idxPepRemainder = idxPep;
         int charPosInAlphabet = 0;
         for (; idxAm>=0; idxAm -= 1)
         {
-            long charPosPow = (long)Math.pow(Consts.aLen, idxAm);
+            long charPosPow = (long)Math.pow(Impl.Consts.aLen, idxAm);
             charPosInAlphabet = (int)(idxPepRemainder / charPosPow);
             lastPepCharPos[pepLen-idxAm-1] = charPosInAlphabet;
             idxPepRemainder -= (charPosInAlphabet * charPosPow);
@@ -70,7 +70,7 @@ public class PeptideGen
         StringBuilder pepConverter = new StringBuilder("AAAAAAAAA");
         for (int i=0; i<charcodes.length; ++i)
         {
-            pepConverter.setCharAt(i, Consts.alphabet.charAt(charcodes[i]));
+            pepConverter.setCharAt(i, Impl.Consts.alphabet.charAt(charcodes[i]));
         }
         return pepConverter;
     }

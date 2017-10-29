@@ -1,51 +1,14 @@
 package org.PeptideClustering;
 
 import info.debatty.spark.kmedoids.Similarity;
+import org.PSSMHC.Impl;
 
 import java.io.Serializable;
 import java.util.HashMap;
 
 class Consts
 {
-    public static final String alphabet = "ACDEFGHIKLMNPQRSTVWY";
-    public static final int    aLen = alphabet.length();
-    public static final String alphabetRegex = "[" + alphabet + "]+";
-    
     public static final double[] PosWeights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-}
-class SubstMatrixRow extends HashMap<Character, Double>         implements Serializable
-{
-    SubstMatrixRow() { super(Consts.aLen, 1.0f); }
-}
-
-class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Serializable 
-{
-    public SubstMatrix(double[][] vals)
-    {
-        super(Consts.aLen, 1.0f);
-        
-        final String ExcMsg =  "Wrong substitution matrix size";
-        if (vals.length != Consts.aLen) 
-        {
-            throw new RuntimeException(ExcMsg);
-        }
-
-        for (int i=0; i<vals.length; ++i) 
-        {
-            if (vals[i].length != Consts.aLen) 
-            {
-                throw new RuntimeException(ExcMsg);
-            }
-            
-            SubstMatrixRow row = new SubstMatrixRow();
-            for (int j=0; j<vals.length; ++j) 
-            {
-                row.put(Consts.alphabet.charAt(j), vals[i][j]);
-            }
-            
-            put(Consts.alphabet.charAt(i), row);
-        }
-    }
 }
 
 class PeptideSimilarity implements Similarity<String> 
@@ -60,8 +23,8 @@ class PeptideSimilarity implements Similarity<String>
 
     private void CheckParams(String p1, String p2)
     {
-        assert(p1.matches(Consts.alphabetRegex));
-        assert(p2.matches(Consts.alphabetRegex));
+        assert(p1.matches(Impl.Consts.alphabetRegex));
+        assert(p2.matches(Impl.Consts.alphabetRegex));
         assert(p1.length() == p2.length());
         assert(Consts.PosWeights.length >= p1.length());
         assert(SM != null);
