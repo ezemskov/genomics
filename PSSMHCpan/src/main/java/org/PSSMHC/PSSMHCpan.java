@@ -9,7 +9,7 @@ import org.w3c.dom.Element;
 
 class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable
 {
-    WeightMatrixColumn() { super(Consts.aLen, 1.0f); }
+    WeightMatrixColumn() { super(Impl.Consts.aLen, 1.0f); }
 }
 class WeightMatrix extends ArrayList<WeightMatrixColumn> implements Serializable {}
 
@@ -34,12 +34,6 @@ class AllelePair
 
 class WeightMatrixPathMap extends HashMap<AllelePair, String> {}
 class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
-
-class Consts
-{
-    public static final String alphabet = "ACDEFGHIKLMNPQRSTVWY";
-    public static final int aLen = alphabet.length();
-}
 
 class PSSMParser
 {
@@ -98,7 +92,7 @@ class PSSMParser
             }
 
             int iRow = 0;
-                while (reader.ready() && (iRow < Consts.aLen))
+                while (reader.ready() && (iRow < Impl.Consts.aLen))
             {
                 String[] row = reader.readLine().split("\t");
                 if (row.length > colsQnty)
@@ -109,13 +103,13 @@ class PSSMParser
 
                 for (int iCol=0; iCol<colsQnty; iCol++)
                 {
-                    res.get(iCol).put(new Character(Consts.alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
+                    res.get(iCol).put(new Character(Impl.Consts.alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
                 }
 
                 iRow +=1;
             }
 
-            if (iRow != Consts.aLen)
+            if (iRow != Impl.Consts.aLen)
             {
                 System.err.format("Invalid PSSM of %d rows\n", iRow);
             }

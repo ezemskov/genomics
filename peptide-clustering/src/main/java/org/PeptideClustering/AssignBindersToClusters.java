@@ -77,6 +77,7 @@ public class AssignBindersToClusters
             Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
             Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
             
+            int fewerPartitions = (int)(0.1 * appCfg.partitions);
             JavaRDD<String> binders = 
                 sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
                 .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
@@ -88,7 +89,7 @@ public class AssignBindersToClusters
             //System.out.format("Binders with IC50<%d qnty %d of %d\n",  pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
             
             List<String> clusterCenters = 
-                jsc.textFile(appCfg.peptidesFilename, appCfg.partitions)
+                jsc.textFile(appCfg.peptidesFilename, fewerPartitions)
                    .map(pssmhcSparkFunc)
                    .filter(ic50FilterSparkFunc)
                    .map(scp -> { return scp.peptide; })
@@ -123,8 +124,9 @@ public class AssignBindersToClusters
                      .persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity>%.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
             
-            String maxDiff = 
-                simPairs.mapToPair( tuple -> {
+            String maxDiff = simPairs
+                    .coalesce(fewerPartitions)
+                    .mapToPair( tuple -> {
                         int score = PeptideSimilarity.posDiff(tuple._1, tuple._2.peptide);
                         return new Tuple2<>(tuple._1, new Impl.ScoredPeptide(tuple._2.peptide, score));
                     }).reduceByKey(
@@ -139,27 +141,25 @@ public class AssignBindersToClusters
             System.out.format("Pair with maximum AA difference %s\n", maxDiff);
             
             // {Bn -> (Ck_max, Snk_max)}
-            JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs.reduceByKey(
-                (scp1, scp2) -> { return (scp1.score < scp2.score) ? scp1 : scp2; } 
-            );
+            JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs
+                .coalesce(fewerPartitions)
+                .reduceByKey(
+                    (scp1, scp2) -> { return (scp1.score < scp2.score) ? scp1 : scp2; } 
+                );
 
             // {Ck -> (Bn, Snk)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairsInv = simMaxPairs.mapToPair(tuple -> {
                 Impl.ScoredPeptide binderWithSim = new Impl.ScoredPeptide(tuple._1, 1.0/tuple._2.score);
                 return new Tuple2<>(tuple._2.peptide, binderWithSim);
             });
-            simMaxPairsInv = simMaxPairsInv.coalesce(appCfg.partitions);
             simMaxPairsInv.persist(StorageLevel.MEMORY_AND_DISK());
                         
             Map<String, Long> clustersCount = simMaxPairsInv.countByKey();
             System.out.format("Clusters qnty %d\n", clustersCount.size());
             FormatMap(clustersCount);
 
-            JavaPairRDD<String, Iterable<Impl.ScoredPeptide>> simMaxPairsGrp = 
-                simMaxPairsInv.groupByKey()
-                              .coalesce(1);
-            simMaxPairsGrp.saveAsTextFile("output-clusters");
-            
+            simMaxPairsInv.groupByKey()
+                          .saveAsTextFile("output-clusters");
             jsc.close();
         }
         catch (Exception ex)
