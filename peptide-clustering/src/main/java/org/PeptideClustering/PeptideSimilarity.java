@@ -6,11 +6,6 @@ import org.PSSMHC.Impl;
 import java.io.Serializable;
 import java.util.HashMap;
 
-class Consts
-{
-    public static final double[] PosWeights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-}
-
 class PeptideSimilarity implements Similarity<String> 
 {
     private SubstMatrix SM = null;
@@ -26,7 +21,6 @@ class PeptideSimilarity implements Similarity<String>
         assert(p1.matches(Impl.Consts.alphabetRegex));
         assert(p2.matches(Impl.Consts.alphabetRegex));
         assert(p1.length() == p2.length());
-        assert(Consts.PosWeights.length >= p1.length());
         assert(SM != null);
     }
     
@@ -39,9 +33,9 @@ class PeptideSimilarity implements Similarity<String>
         {
             char ch1 = p1.charAt(i);
             char ch2 = p2.charAt(i);
-            sc12 += Consts.PosWeights[i] * SM.get(ch1).get(ch2);
-            sc11 += Consts.PosWeights[i] * SM.get(ch1).get(ch1);
-            sc22 += Consts.PosWeights[i] * SM.get(ch2).get(ch2);
+            sc12 += SM.get(ch1).get(ch2);
+            sc11 += SM.get(ch1).get(ch1);
+            sc22 += SM.get(ch2).get(ch2);
         }
             
         return 2*sc12/(sc11 + sc22);
@@ -54,7 +48,7 @@ class PeptideSimilarity implements Similarity<String>
 
         for (int i=0; i<p1.length(); ++i)
         {
-            sc12 += Consts.PosWeights[i] * SM.get(p1.charAt(i)).get(p2.charAt(i));
+            sc12 += SM.get(p1.charAt(i)).get(p2.charAt(i));
         }
         sc12 *= 2;
         
@@ -64,7 +58,7 @@ class PeptideSimilarity implements Similarity<String>
         {
             char ch1 = p1.charAt(i);
             char ch2 = p2.charAt(i);
-            sc11_22 += Consts.PosWeights[i] * (SM.get(ch1).get(ch1) + SM.get(ch2).get(ch2));            
+            sc11_22 += (SM.get(ch1).get(ch1) + SM.get(ch2).get(ch2));            
             if (sc11_22 >= sumMax) 
             { 
                 return Double.NaN; 
@@ -93,8 +87,9 @@ class PeptideSimilarity implements Similarity<String>
     //Todo : generalize for different matrices and peptide lengths ?
     public static int maxPosDiff(double similarityBound)
     {
-        if (similarityBound >= 0.9) { return 2; }
+        if (similarityBound >= 0.9) { return 3; }
         if (similarityBound >= 0.8) { return 4; }
+        if (similarityBound >= 0.7) { return 5; }
         if (similarityBound >= 0.5) { return 6; }
         return 9;
     }
