@@ -77,6 +77,8 @@ public class AssignBindersToClusters
             Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
             Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
             
+            final long timeStart = System.currentTimeMillis();
+            
             int fewerPartitions = (int)(0.1 * appCfg.partitions);
             JavaRDD<String> binders = 
                 sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
@@ -87,6 +89,8 @@ public class AssignBindersToClusters
                 .map(scp -> {return scp.peptide;});
             
             //System.out.format("Binders with IC50<%d qnty %d of %d\n",  pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
+            //final long timeBinders = System.currentTimeMillis();
+            //System.out.format("Calc duration %.1f sec\n", (timeBinders - timeStart)/1000.f);
             
             List<String> clusterCenters = 
                 jsc.textFile(appCfg.peptidesFilename, fewerPartitions)
@@ -98,6 +102,8 @@ public class AssignBindersToClusters
             
             System.out.format("Cluster centers with IC50<%d qnty %d\n", 
                 pssmhcCfg.ic50Threshold, clusterCenters.size());
+            final long timeCenters = System.currentTimeMillis();
+            System.out.format("Calc duration %.1f sec\n", ((timeCenters - timeStart)/1000.f));
 
             PepSimSparkFunc simFunc = new PepSimSparkFunc(1/appCfg.minSimilarity);
             simFunc.SetMatrix(SubstMatrices.get(appCfg.matrix));
@@ -117,12 +123,17 @@ public class AssignBindersToClusters
             
             //pairs.persist(StorageLevel.MEMORY_AND_DISK());
             //System.out.format("Pairs different by at most %d AA qnty %d\n", maxPosDiff, pairs.count());
+            //final long timePairsDiff = System.currentTimeMillis();
+            //System.out.format("Calc duration %.1f sec\n", (timePairsDiff-timeCenters)/1000.f);
+                        
             // {Bn -> {(Ck, Snk)}}
             JavaPairRDD<String, Impl.ScoredPeptide> simPairs = 
                 pairs.mapToPair(simFunc)
                      .filter(tuple -> { return !Double.isNaN(tuple._2.score); })
                      .persist(StorageLevel.MEMORY_AND_DISK());
             System.out.format("Pairs with similarity>%.2f qnty %d\n", appCfg.minSimilarity, simPairs.count());
+            final long timeSimPairs = System.currentTimeMillis();
+            System.out.format("Calc duration %.1f sec\n", (timeSimPairs-timeCenters)/1000.f);
             
             String maxDiff = simPairs
                     .coalesce(fewerPartitions)
@@ -139,6 +150,8 @@ public class AssignBindersToClusters
                     ) .toString();
             
             System.out.format("Pair with maximum AA difference %s\n", maxDiff);
+            final long timeMaxDiff = System.currentTimeMillis();
+            System.out.format("Calc duration %.1f sec\n", (timeMaxDiff-timeSimPairs)/1000.f);
             
             // {Bn -> (Ck_max, Snk_max)}
             JavaPairRDD<String, Impl.ScoredPeptide> simMaxPairs = simPairs
@@ -160,6 +173,10 @@ public class AssignBindersToClusters
 
             simMaxPairsInv.groupByKey()
                           .saveAsTextFile("output-clusters");
+            final long timeClusters = System.currentTimeMillis();
+            System.out.format("Calc duration %.1f sec\n", (timeClusters-timeMaxDiff)/1000.f);
+            System.out.format("Cumulative calc duration %.1f sec\n", (timeClusters-timeStart)/1000.f);
+
             jsc.close();
         }
         catch (Exception ex)
