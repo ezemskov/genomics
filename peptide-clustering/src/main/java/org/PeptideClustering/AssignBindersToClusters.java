@@ -88,20 +88,29 @@ public class AssignBindersToClusters
                 .filter(ic50FilterSparkFunc)
                 .map(scp -> {return scp.peptide;});
             
+            //binders.persist(StorageLevel.MEMORY_AND_DISK());
             //System.out.format("Binders with IC50<%d qnty %d of %d\n",  pssmhcCfg.ic50Threshold, binders.count(), (pssmhcCfg.end - pssmhcCfg.start));
             //final long timeBinders = System.currentTimeMillis();
             //System.out.format("Calc duration %.1f sec\n", (timeBinders - timeStart)/1000.f);
             
-            List<String> clusterCenters = 
+            JavaRDD<Impl.ScoredPeptide> clusterCentersScored = 
                 jsc.textFile(appCfg.peptidesFilename, fewerPartitions)
                    .map(pssmhcSparkFunc)
-                   .filter(ic50FilterSparkFunc)
-                   .map(scp -> { return scp.peptide; })
-                   .collect();
-            jsc.broadcast(clusterCenters);
+                   .persist(StorageLevel.MEMORY_AND_DISK());
             
-            System.out.format("Cluster centers with IC50<%d qnty %d\n", 
-                pssmhcCfg.ic50Threshold, clusterCenters.size());
+            JavaRDD<Impl.ScoredPeptide> clusterCentersFilt = clusterCentersScored
+                   .filter(ic50FilterSparkFunc)
+                   .persist(StorageLevel.MEMORY_AND_DISK());
+            
+            clusterCentersFilt.coalesce(1)
+                          .saveAsTextFile("output-centers");
+            List<String> clusterCentersList = 
+                clusterCentersFilt.map(scp -> { return scp.peptide; })
+                              .collect();
+            
+            jsc.broadcast(clusterCentersList);
+            
+            System.out.format("Cluster centers qnty %d of %d\n", clusterCentersList.size(), clusterCentersScored.count());
             final long timeCenters = System.currentTimeMillis();
             System.out.format("Calc duration %.1f sec\n", ((timeCenters - timeStart)/1000.f));
 
@@ -113,7 +122,7 @@ public class AssignBindersToClusters
             // {Bn -> Ck}
             JavaPairRDD<String, String> pairs = binders.flatMapToPair(binder -> {
                         ArrayList<Tuple2<String, String>> res = new ArrayList<>();
-                        for (String center : clusterCenters) {
+                        for (String center : clusterCentersList) {
                             res.add(new Tuple2<>(binder, center));
                         }
                         return res.iterator();
