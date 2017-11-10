@@ -80,7 +80,7 @@ public class Impl
         @Override
         public Boolean call(ScoredPeptide scPep)
         {
-            return (scPep.score < scoreThreshold);
+            return (scoreThreshold > 0)  ? (scPep.score < scoreThreshold) : true;
         }
 
         double scoreThreshold;

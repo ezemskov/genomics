@@ -75,7 +75,7 @@ public class AssignBindersToClusters
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
             Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
-            Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
+            Impl.ScoreFilterSparkFunc bindersFilterSparkFunc = new Impl.ScoreFilterSparkFunc((double)pssmhcCfg.ic50Threshold);
             
             final long timeStart = System.currentTimeMillis();
             
@@ -85,7 +85,7 @@ public class AssignBindersToClusters
                 .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                 .toJavaRDD()
                 .map(pssmhcSparkFunc)
-                .filter(ic50FilterSparkFunc)
+                .filter(bindersFilterSparkFunc)
                 .map(scp -> {return scp.peptide;});
             
             //binders.persist(StorageLevel.MEMORY_AND_DISK());
@@ -98,8 +98,9 @@ public class AssignBindersToClusters
                    .map(pssmhcSparkFunc)
                    .persist(StorageLevel.MEMORY_AND_DISK());
             
+            Impl.ScoreFilterSparkFunc centersFilterSparkFunc = new Impl.ScoreFilterSparkFunc((double)appCfg.centersIc50Threshold);
             JavaRDD<Impl.ScoredPeptide> clusterCentersFilt = clusterCentersScored
-                   .filter(ic50FilterSparkFunc)
+                   .filter(centersFilterSparkFunc)
                    .persist(StorageLevel.MEMORY_AND_DISK());
             
             clusterCentersFilt.coalesce(1)

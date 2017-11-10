@@ -9,6 +9,7 @@ public class XmlCfg
     String peptidesFilename = "";
     String matrix = "";
     double minSimilarity = Double.NaN;
+    int centersIc50Threshold = -1;
 
     public XmlCfg(String xmlFilename) throws Exception
     {
@@ -16,11 +17,12 @@ public class XmlCfg
         Element elem = Xml.Utils.getChildElem(root, "clustering");
         if (elem == null) { return; }
 
-        peptidesFilename =                    elem.getAttribute("peptidesFilePath");
-        matrix           =                    elem.getAttribute("matrix");
-        clustersQnty     = Integer.parseInt(  elem.getAttribute("clustersQnty"));
-        maxTrials        = Integer.parseInt(  elem.getAttribute("maxTrials"));
-        minSimilarity    = Double.parseDouble(elem.getAttribute("minSimilarity"));
-        partitions       = Integer.parseInt(Xml.Utils.getChildAttr(root, "spark", "partitions"));
+        peptidesFilename =                      elem.getAttribute("peptidesFilePath");
+        centersIc50Threshold = Integer.parseInt(elem.getAttribute("centersIc50Threshold"));
+        matrix          =                       elem.getAttribute("matrix");
+        clustersQnty    = Integer.parseInt(     elem.getAttribute("clustersQnty"));
+        maxTrials       = Integer.parseInt(     elem.getAttribute("maxTrials"));
+        minSimilarity   = Double.parseDouble(   elem.getAttribute("minSimilarity"));
+        partitions      = Integer.parseInt(Xml.Utils.getChildAttr(root, "spark", "partitions"));
     }
 }
