@@ -10,7 +10,8 @@ import static org.junit.Assert.*;
 public class PeptideSimilarityTest
 {
     PeptideSimilarity simCalc = null;
-    static double Threshold = 0.001; 
+    //wide threshold accounts for difference between integer and real subst matrices
+    static double Threshold = 0.02;
     static String oxytocin = "CYIQNCPLG";
     
     @Before
@@ -37,7 +38,7 @@ public class PeptideSimilarityTest
     public void testSimilarityToOther()
     {
         String other = "SQPLSALWG";
-        assertEquals(-0.114, simCalc.similarity(oxytocin, other), Threshold);
+        assertEquals(-0.114, simCalc.similarity(oxytocin, other), 0.02);
         assertEquals(0.504, simCalc.similarity("RPVDQNTQS", "KAFDRNTES"), Threshold);
     }
 
@@ -48,6 +49,15 @@ public class PeptideSimilarityTest
         {
             testAvgRandSimilarityOnce();
         }
+    }
+
+    @Test
+    public void testSubstMatrix() throws Exception
+    {
+        SubstMatrix matrix = SubstMatrices.get("blosum62");
+        
+        assertEquals(matrix.get('C').get('M'), -1, 0.1);
+        assertEquals(matrix.get('K').get('R'), 2, 0.1);
     }
     
     private void testAvgRandSimilarityOnce()
