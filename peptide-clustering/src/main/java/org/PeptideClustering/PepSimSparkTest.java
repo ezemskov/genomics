@@ -34,7 +34,9 @@ public class PepSimSparkTest
             JavaPairRDD<String, String> pairs = pepts.cartesian(pepts);
             pairs.cache();
             System.out.format("Generated %d pairs\n", pairs.count());
-            pairs.foreach(tuple -> { PeptideSimilarity.posDiff(tuple._1, tuple._2); });
+            PeptideSimilarity sim = new PeptideSimilarity();
+            sim.SetMatrix(new SubstMatrices.Blosum62());
+            pairs.foreach(tuple -> { sim.posDiff(tuple._1, tuple._2); });
             System.out.format("Calculated %d diffs\n", pairs.count());
             
             jsc.close();

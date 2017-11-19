@@ -128,7 +128,7 @@ public class AssignBindersToClusters
                         }
                         return res.iterator();
                     }).filter(tuple -> { 
-                        return (PeptideSimilarity.posDiff(tuple._1, tuple._2) <= maxPosDiff); 
+                        return (simFunc.posDiff(tuple._1, tuple._2) <= maxPosDiff); 
                     });
             
             //pairs.persist(StorageLevel.MEMORY_AND_DISK());
@@ -148,7 +148,7 @@ public class AssignBindersToClusters
             String maxDiff = simPairs
                     .coalesce(fewerPartitions)
                     .mapToPair( tuple -> {
-                        int score = PeptideSimilarity.posDiff(tuple._1, tuple._2.peptide);
+                        int score = simFunc.posDiff(tuple._1, tuple._2.peptide);
                         return new Tuple2<>(tuple._1, new Impl.ScoredPeptide(tuple._2.peptide, score));
                     }).reduceByKey(
                         (scp1, scp2) -> { return (scp1.score > scp2.score) ? scp1 : scp2; 

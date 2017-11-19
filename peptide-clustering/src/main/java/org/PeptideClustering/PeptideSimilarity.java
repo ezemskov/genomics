@@ -5,14 +5,18 @@ import org.PSSMHC.Impl;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import scala.Tuple2;
 
 class PeptideSimilarity implements Similarity<String> 
 {
     private SubstMatrix SM = null;
+    private AminoPairSet pairs = null;
     
     public <T extends PeptideSimilarity> T SetMatrix(SubstMatrix SM_)
     {
         this.SM = SM_;
+        this.pairs = new AminoPairSet(this.SM);
+        //System.out.format("pairs %s\n", this.pairs.toString());
         return (T)this;
     }
 
@@ -68,13 +72,16 @@ class PeptideSimilarity implements Similarity<String>
         return sc11_22 / sc12;
     }
 
-    public static int posDiff(String p1, String p2)
+    public int posDiff(String p1, String p2)
     {
         assert(p1.length() == p2.length());
         int res = 0;
         for (int i=0; i<p1.length(); ++i)
         {
-            if (p1.charAt(i) != p2.charAt(i))
+            Character c1 = p1.charAt(i);
+            Character c2 = p2.charAt(i);
+            if (!c1.equals(c2) &&
+                !pairs.contains(new Tuple2<>(c1, c2)))
             {
                 res += 1;
             }

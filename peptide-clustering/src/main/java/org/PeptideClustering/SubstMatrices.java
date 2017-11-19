@@ -1,9 +1,10 @@
 package org.PeptideClustering;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.HashMap;
-import java.util.Map;
 import org.PSSMHC.Impl;
+import scala.Tuple2;
 
 class SubstMatrixRow extends HashMap<Character, Double>         implements Serializable
 {
@@ -43,9 +44,26 @@ class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Seria
     }
 }
 
+class AminoPairSet extends HashSet<Tuple2<Character, Character>> implements Serializable
+{
+    public static final double Thr = 1.0;
+    
+    public AminoPairSet(SubstMatrix m)
+    {
+        m.forEach(
+            (c1,row) -> { row.forEach(
+                (c2, val) -> { if ((val >= Thr) && (!c1.equals(c2))) { 
+                    this.add(new Tuple2<>(c1, c2));
+                    this.add(new Tuple2<>(c2, c1));
+                } } 
+            );}
+        );
+    }
+}
+
 public class SubstMatrices
 {
-    static final protected HashMap<String, SubstMatrix> matrices = new HashMap<String, SubstMatrix>();
+    static final protected HashMap<String, SubstMatrix> matrices = new HashMap<>();
 
     public static SubstMatrix get(String name) throws Exception
     {
@@ -63,8 +81,8 @@ public class SubstMatrices
         matrices.put("blosum62", new Blosum62()); 
         matrices.put("blosum80", new Blosum80()); 
         matrices.put("pam120", new Pam120()); 
-        //matrices.put("pam150", new Pam150()); 
-        //matrices.put("pam200", new Pam200()); 
+        matrices.put("pam150", new Pam150()); 
+        matrices.put("pam250", new Pam250()); 
     }    
 
     static class Blosum50 extends SubstMatrix implements Serializable
@@ -253,23 +271,3 @@ public class SubstMatrices
         };
     }
 }
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
-,
