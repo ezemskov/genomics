@@ -6,7 +6,7 @@ import java.util.HashMap;
 import org.PSSMHC.Impl;
 import scala.Tuple2;
 
-class SubstMatrixRow extends HashMap<Character, Double>         implements Serializable
+class SubstMatrixRow extends HashMap<Character, Integer>         implements Serializable
 {
     SubstMatrixRow() { super(SubstMatrix.matrixAlphabet.length(), 1.0f); }
 }
@@ -16,9 +16,10 @@ class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Seria
     //order of amino acids in matrices published by NCBI
     public static final String matrixAlphabet = "ARNDCQEGHILKMFPSTWYVBZX";
     
-    public SubstMatrix(double[][] vals)
+    public SubstMatrix(int[][] vals)
     {
         super(Impl.Consts.aLen, 1.0f);
+        
         
         final String ExcMsg =  "Wrong substitution matrix size";
         if (vals.length != matrixAlphabet.length()) 
@@ -46,7 +47,7 @@ class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Seria
 
 class AminoPairSet extends HashSet<Tuple2<Character, Character>> implements Serializable
 {
-    public static final double Thr = 1.0;
+    public static final int Thr = 1;
     
     public AminoPairSet(SubstMatrix m)
     {
@@ -89,7 +90,7 @@ public class SubstMatrices
     {
         public Blosum50() { super(vals); }
         
-        static double[][] vals = new double[][] {
+        static int[][] vals = new int[][] {
             { 5, -2, -1, -2, -1, -1, -1,  0, -2, -1, -2, -1, -1, -3, -1,  1,  0, -3, -2,  0, -2, -1, -1},
             {-2,  7, -1, -2, -4,  1,  0, -3,  0, -4, -3,  3, -2, -3, -3, -1, -1, -3, -1, -3, -1,  0, -1},
             {-1, -1,  7,  2, -2,  0,  0,  0,  1, -3, -4,  0, -2, -4, -2,  1,  0, -4, -2, -3,  4,  0, -1},
@@ -120,7 +121,7 @@ public class SubstMatrices
     {
         public Blosum62() { super(vals); }
 
-        static double[][] vals = new double[][] {
+        static int[][] vals = new int[][] {
             { 4, -1, -2, -2,  0, -1, -1,  0, -2, -1, -1, -1, -1, -2, -1,  1,  0, -3, -2,  0, -2, -1,  0},
             {-1,  5,  0, -2, -3,  1,  0, -2,  0, -3, -2,  2, -1, -3, -2, -1, -1, -3, -2, -3, -1,  0, -1},
             {-2,  0,  6,  1, -3,  0,  0,  0,  1, -3, -3,  0, -2, -3, -2,  1,  0, -4, -2, -3,  3,  0, -1},
@@ -151,7 +152,7 @@ public class SubstMatrices
     {
         public Blosum80() { super(vals); }
 
-        static double[][] vals = new double[][] {
+        static int[][] vals = new int[][] {
             { 7, -3, -3, -3, -1, -2, -2,  0, -3, -3, -3, -1, -2, -4, -1,  2,  0, -5, -4, -1, -3, -2, -1},
             {-3,  9, -1, -3, -6,  1, -1, -4,  0, -5, -4,  3, -3, -5, -3, -2, -2, -5, -4, -4, -2,  0, -2},
             {-3, -1,  9,  2, -5,  0, -1, -1,  1, -6, -6,  0, -4, -6, -4,  1,  0, -7, -4, -5,  5, -1, -2},
@@ -182,7 +183,7 @@ public class SubstMatrices
     {
         public Pam120() { super(vals); }
 
-        static double[][] vals = new double[][] {
+        static int[][] vals = new int[][] {
             { 2, -2,  0,  0, -2,  0,  0,  1, -1, -1, -2, -1, -1, -3,  1,  1,  1, -6, -3,  0,  0,  0,  0},
             {-2,  6,  0, -1, -4,  1, -1, -3,  2, -2, -3,  3,  0, -4,  0,  0, -1,  2, -4, -2, -1,  0, -1},
             { 0,  0,  2,  2, -4,  1,  1,  0,  2, -2, -3,  1, -2, -3,  0,  1,  0, -4, -2, -2,  2,  1,  0},
@@ -213,7 +214,7 @@ public class SubstMatrices
     {
         public Pam150() { super(vals); }
 
-        static double[][] vals = new double[][] {
+        static int[][] vals = new int[][] {
             { 3, -2,  0,  0, -2, -1,  0,  1, -2, -1, -2, -2, -1, -4,  1,  1,  1, -6, -3,  0,  0,  0, -1},
             {-2,  6, -1, -2, -4,  1, -2, -3,  1, -2, -3,  3, -1, -4, -1, -1, -2,  1, -4, -3, -2,  0, -1},
             { 0, -1,  3,  2, -4,  0,  1,  0,  2, -2, -3,  1, -2, -4, -1,  1,  0, -4, -2, -2,  3,  1, -1},
@@ -244,7 +245,7 @@ public class SubstMatrices
     {
         public Pam250() { super(vals); }
 
-        static double[][] vals = new double[][] {
+        static int[][] vals = new int[][] {
             { 2, -2,  0,  0, -2,  0,  0,  1, -1, -1, -2, -1, -1, -3,  1,  1,  1, -6, -3,  0,  0,  0,  0},
             {-2,  6,  0, -1, -4,  1, -1, -3,  2, -2, -3,  3,  0, -4,  0,  0, -1,  2, -4, -2, -1,  0, -1},
             { 0,  0,  2,  2, -4,  1,  1,  0,  2, -2, -3,  1, -2, -3,  0,  1,  0, -4, -2, -2,  2,  1,  0},
