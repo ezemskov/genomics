@@ -45,7 +45,7 @@ class SubstMatrix    extends HashMap<Character, SubstMatrixRow> implements Seria
     }
 }
 
-class AminoPairSet extends HashSet<Tuple2<Character, Character>> implements Serializable
+class AminoPairSet extends HashSet<String> implements Serializable
 {
     public static final int Thr = 1;
     
@@ -53,9 +53,10 @@ class AminoPairSet extends HashSet<Tuple2<Character, Character>> implements Seri
     {
         m.forEach(
             (c1,row) -> { row.forEach(
-                (c2, val) -> { if ((val >= Thr) && (!c1.equals(c2))) { 
-                    this.add(new Tuple2<>(c1, c2));
-                    this.add(new Tuple2<>(c2, c1));
+                (c2, val) -> { if ((val >= Thr) && (!c1.equals(c2))) 
+                {
+                    this.add("" + c1 + c2);
+                    this.add("" + c2 + c1);
                 } } 
             );}
         );

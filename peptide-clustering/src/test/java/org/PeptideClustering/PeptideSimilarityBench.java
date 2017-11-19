@@ -23,15 +23,21 @@ public class PeptideSimilarityBench
         benchmark((p1, p2) -> { return 0.0; }, false);
     }
 
-
     @Test
+    public void benchmarkPosDiff()
+    {
+        System.out.println("posDiff only");
+        benchmark((p1, p2) -> { return simCalc.posDiff(p1, p2); }, false);
+    }
+
+    //@Test
     public void benchmarkSimilarity()
     {
         System.out.println("similarity only");
         benchmark((p1, p2) -> { return simCalc.similarity(p1, p2); }, false);
     }
 
-    @Test
+    //@Test
     public void benchmarkNW()
     {
         System.out.println("NeedlemanWunsch");
@@ -48,7 +54,7 @@ public class PeptideSimilarityBench
         Random randGen = new Random();
         PeptideGen pepGen = new PeptideGen();
         
-        final int IterationsCount = 1000000;
+        final int IterationsCount = 50000000;
         final long startTime = System.currentTimeMillis();
         int interruptedCalcCount = 0;
         

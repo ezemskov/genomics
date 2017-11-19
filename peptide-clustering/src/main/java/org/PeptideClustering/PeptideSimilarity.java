@@ -3,8 +3,6 @@ package org.PeptideClustering;
 import info.debatty.spark.kmedoids.Similarity;
 import org.PSSMHC.Impl;
 
-import java.io.Serializable;
-import java.util.HashMap;
 import scala.Tuple2;
 
 class PeptideSimilarity implements Similarity<String> 
@@ -77,10 +75,9 @@ class PeptideSimilarity implements Similarity<String>
         int res = 0;
         for (int i=0; i<p1.length(); ++i)
         {
-            Character c1 = p1.charAt(i);
-            Character c2 = p2.charAt(i);
-            if (!c1.equals(c2) &&
-                !pairs.contains(new Tuple2<>(c1, c2)))
+            final char c1 = p1.charAt(i);
+            final char c2 = p2.charAt(i);
+            if ((c1 != c2) && !pairs.contains("" + c1 + c2))
             {
                 res += 1;
             }
