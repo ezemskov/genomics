@@ -16,7 +16,6 @@ class PeptideSimilarity implements Similarity<String>
     {
         this.SM = SM_;
         this.pairs = new AminoPairSet(this.SM);
-        //System.out.format("pairs %s\n", this.pairs.toString());
         return (T)this;
     }
 

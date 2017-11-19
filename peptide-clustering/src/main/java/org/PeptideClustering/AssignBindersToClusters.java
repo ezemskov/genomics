@@ -115,8 +115,12 @@ public class AssignBindersToClusters
             final long timeCenters = System.currentTimeMillis();
             System.out.format("Calc duration %.1f sec\n", ((timeCenters - timeStart)/1000.f));
 
+            final SubstMatrix sm = SubstMatrices.get(appCfg.matrix);
+            final int pairsQnty = (new AminoPairSet(sm).size())/2;
+            System.out.format("AA pairs with subst value > %d qnty %d\n", AminoPairSet.Thr, pairsQnty);
+
             PepSimSparkFunc simFunc = new PepSimSparkFunc(1/appCfg.minSimilarity);
-            simFunc.SetMatrix(SubstMatrices.get(appCfg.matrix));
+            simFunc.SetMatrix(sm);
             
             final int maxPosDiff = PeptideSimilarity.maxPosDiff(appCfg.minSimilarity);
 
