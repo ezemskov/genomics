@@ -57,7 +57,7 @@ public class PeptideSimilarityTest
         SubstMatrix matrix = SubstMatrices.get("blosum62");
         
         assertEquals(matrix.get('C').get('M'), -1, 0.1);
-        assertEquals(matrix.get('K').get('R'), 2, 0.1);
+        assertEquals(matrix.get('K').get('R'),  2, 0.1);
     }
     
     private void testAvgRandSimilarityOnce()
@@ -77,5 +77,32 @@ public class PeptideSimilarityTest
         
         double avgSim = totalSim/qnty;
         assertEquals(0.1, avgSim, randomThreshold);
+    }
+
+    @Test
+    public void testMapPosDiffBlosum62()
+    {
+        MaxPosDiff m = new MaxPosDiff(new SubstMatrices.Blosum62());
+
+        assertEquals(PeptideGen.pepLen, m.lowerBound(-1.0));
+        assertEquals(PeptideGen.pepLen, m.lowerBound(-0.15));
+        assertEquals(PeptideGen.pepLen, m.lowerBound(-0.1));
+        assertEquals(PeptideGen.pepLen, m.lowerBound(0.0));
+
+        assertEquals(8, m.lowerBound(0.1));
+        assertEquals(8, m.lowerBound(0.16));
+        assertEquals(8, m.lowerBound(0.2));
+        assertEquals(8, m.lowerBound(0.3));
+        assertEquals(8, m.lowerBound(0.35));
+        assertEquals(7, m.lowerBound(0.4));
+        assertEquals(7, m.lowerBound(0.5));
+        assertEquals(7, m.lowerBound(0.6));
+        assertEquals(7, m.lowerBound(0.65));
+        assertEquals(6, m.lowerBound(0.7));
+        assertEquals(6, m.lowerBound(0.8));
+        assertEquals(6, m.lowerBound(0.9));
+        assertEquals(5, m.lowerBound(1.0));
+        assertEquals(5, m.lowerBound(1.05));
+        assertEquals(5, m.lowerBound(2.0));
     }
 }

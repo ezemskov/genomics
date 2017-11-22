@@ -3,8 +3,10 @@ package org.PeptideClustering;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import org.PSSMHC.Impl;
-import scala.Tuple2;
+import org.PSSMHC.PeptideGen;
 
 class SubstMatrixRow extends HashMap<Character, Integer>         implements Serializable
 {
@@ -60,6 +62,51 @@ class AminoPairSet extends HashSet<String> implements Serializable
                 } } 
             );}
         );
+    }
+}
+
+class MaxPosDiffElem extends scala.Tuple2<Double, Integer>  
+{
+    public MaxPosDiffElem(Double sim, Integer diff) { super(sim, diff); }
+}
+
+class MaxPosDiff extends ArrayList<MaxPosDiffElem> 
+                 implements Serializable
+{
+    private static final double Interval = 0.1;
+    
+    public MaxPosDiff(SubstMatrix sm)
+    {
+        List<Integer> diagonal = new ArrayList<>(Impl.Consts.alphabet.length());
+        for (Character aa : Impl.Consts.alphabet.toCharArray())
+        {
+            diagonal.add(sm.get(aa).get(aa));
+        }
+        
+        double diagRatio = (double)java.util.Collections.min(diagonal) / 
+                           (double)java.util.Collections.max(diagonal);
+        
+        for (double sim=0.0; sim<1.0; sim+=Interval)
+        {
+            int maxPosDiff = PeptideGen.pepLen - (int)Math.ceil((double)PeptideGen.pepLen * sim * diagRatio);
+            this.add(new MaxPosDiffElem(sim, maxPosDiff));
+        }
+    }
+    
+    public int lowerBound(double sim)
+    {
+        final MaxPosDiffElem key = new MaxPosDiffElem(sim, 0);
+        java.util.Comparator<MaxPosDiffElem> comp = 
+            (MaxPosDiffElem v1, MaxPosDiffElem v2) -> v1._1.compareTo(v2._1);
+        final int idxFound = java.util.Collections.binarySearch(this, key, comp);
+        
+        if (idxFound == -1) 
+        { 
+            return get(0)._2; 
+        }
+        
+        final int idx = java.lang.Math.abs((idxFound < 0) ? idxFound+2 : idxFound);
+        return get(idx)._2;
     }
 }
 

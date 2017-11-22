@@ -4,7 +4,7 @@ import java.lang.StringBuilder;
 
 public class PeptideGen
 {
-    private static int pepLen = 9;
+    public static int pepLen = 9;
     private static long maxIndex = (long)Math.pow(Impl.Consts.aLen, pepLen) - 1; //20^9 - 1
     
     private StringBuilder lastPepStr = null;

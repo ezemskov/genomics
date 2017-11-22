@@ -122,7 +122,7 @@ public class AssignBindersToClusters
             PepSimSparkFunc simFunc = new PepSimSparkFunc(1/appCfg.minSimilarity);
             simFunc.SetMatrix(sm);
             
-            final int maxPosDiff = PeptideSimilarity.maxPosDiff(appCfg.minSimilarity);
+            final int maxPosDiff = new MaxPosDiff(sm).lowerBound(appCfg.minSimilarity);
 
             // {Bn -> Ck}
             JavaPairRDD<String, String> pairs = binders.flatMapToPair(binder -> {

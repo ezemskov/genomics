@@ -3,8 +3,6 @@ package org.PeptideClustering;
 import info.debatty.spark.kmedoids.Similarity;
 import org.PSSMHC.Impl;
 
-import scala.Tuple2;
-
 class PeptideSimilarity implements Similarity<String> 
 {
     private SubstMatrix SM = null;
@@ -77,23 +75,29 @@ class PeptideSimilarity implements Similarity<String>
         {
             final char c1 = p1.charAt(i);
             final char c2 = p2.charAt(i);
-            if ((c1 != c2) && !pairs.contains("" + c1 + c2))
+            if ((c1 != c2))
             {
                 res += 1;
             }
         }
         return res;
     }
-    
-    //Maximum (empirical) amount of different amino acids present in 9-meer peptide pair
-    //so it has similarity over similarityBound
-    //Todo : generalize for different matrices and peptide lengths ?
-    public static int maxPosDiff(double similarityBound)
+
+    //Ignores differences of AAs with subst matrix value above threshold
+    //Not used for performance reasons
+    public int posDiff2(String p1, String p2)
     {
-        if (similarityBound >= 0.9) { return 3; }
-        if (similarityBound >= 0.8) { return 4; }
-        if (similarityBound >= 0.7) { return 5; }
-        if (similarityBound >= 0.5) { return 6; }
-        return 9;
+        assert(p1.length() == p2.length());
+        int res = 0;
+        for (int i=0; i<p1.length(); ++i)
+        {
+            final char c1 = p1.charAt(i);
+            final char c2 = p2.charAt(i);
+            if ((c1 != c2) && !pairs.contains("" + c1 + c2))
+            {
+                res += 1;
+            }
+        }
+        return res;
     }
 }
