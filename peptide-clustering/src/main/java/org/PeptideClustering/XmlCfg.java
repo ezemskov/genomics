@@ -1,7 +1,6 @@
 package org.PeptideClustering;
 
 import java.nio.file.FileSystems;
-import java.nio.file.Path;
 import org.PSSMHC.Xml;
 import org.w3c.dom.Element;
 

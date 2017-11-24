@@ -1,22 +1,9 @@
 package org.PSSMHC;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.MapFunction;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.Row;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import org.xml.sax.SAXException;
-import org.w3c.dom.Document; 
-import org.w3c.dom.Element; 
-import org.w3c.dom.NodeList; 
-import org.w3c.dom.Node; 
 
 public class Impl
 {
@@ -41,18 +28,6 @@ public class Impl
         public ScoredPeptide call(String peptide)
         {
             return new ScoredPeptide(peptide, ScoreOnePeptide(peptide));
-        }
-    }
-
-    public static class PeptideBloomSparkFunc 
-                            extends PeptideBloomFilter
-                            implements Serializable,
-                            VoidFunction<ScoredPeptide>
-    {
-        @Override
-        public void call(ScoredPeptide scPep)
-        {
-            Add(scPep.peptide);
         }
     }
 
