@@ -5,6 +5,8 @@ import java.util.*;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.Serializable;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import org.w3c.dom.Element;
 
 class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable
@@ -37,14 +39,32 @@ class WeightMatrices extends HashMap<AllelePair, WeightMatrix> {}
 
 class PSSMParser
 {
-    //filePath is pssm_file.list
-    //ap is a 'allele name/length' pair
-    public static WeightMatrix FindAndParsePSSM(String pssmListPath, AllelePair ap)
+    private String _pssmListPath;
+    private AllelePair _ap;    
+    private String _pathPrefix;
+
+    PSSMParser(String xmlFilename) throws Exception
     {
-        WeightMatrix res = null;
+        Element root = Xml.Utils.parseXml(xmlFilename);
+        Element elem = Xml.Utils.getChildElem(root, "PSSMHC");
+        if (elem == null) { return; }
+        
+        _ap = new AllelePair();
+        _ap.pepLength = Integer.parseInt(elem.getAttribute("peptideLength"));
+        _ap.alName = elem.getAttribute("alleleName");
+
+        _pssmListPath = elem.getAttribute("fileList");
+        _pathPrefix  = Xml.Utils.getChildAttr(root, "system", "pathPrefix");
+    }
+
+    //pssmListPath is pssm_file.list
+    //ap is a 'allele name/length' pair
+    public WeightMatrix FindAndParsePSSM()
+    {
         try
         {
-            BufferedReader reader = new BufferedReader(new FileReader(pssmListPath));
+            final Path pssmListPath = FileSystems.getDefault().getPath(_pathPrefix, _pssmListPath);
+            BufferedReader reader = new BufferedReader(new FileReader(pssmListPath.toFile()));
             while (reader.ready())
             {
                 String rowStr = reader.readLine();
@@ -55,28 +75,29 @@ class PSSMParser
                     continue;
                 }
                 
-                if (ap.alName.equals(row[1]) && 
-                    (ap.pepLength == Integer.parseInt(row[2])))
+                if (_ap.alName.equals(row[1]) && 
+                   (_ap.pepLength == Integer.parseInt(row[2])))
                 {
-                    String pssmFilePath = row[0];
-                    res = ParsePSSM(pssmFilePath);
+                    final String pssmFilePathStr = row[0];
+                    final Path pssmPath = FileSystems.getDefault().getPath(_pathPrefix, pssmFilePathStr);
+                    return ParsePSSM(pssmPath);
                 }
             }
         }
         catch (Exception e) 
         {
-            System.err.format("Error reading %s : %s\n", pssmListPath, e.getMessage());
+            System.err.format("Error reading %s : %s\n", _pssmListPath, e.getMessage());
         }        
-        return res;
+        return null;
     }
 
     //filePath is database/PSSM/HLA-xxxxx_N.pssm
-    private static WeightMatrix ParsePSSM(String filePath)
+    private static WeightMatrix ParsePSSM(Path filePath)
     {
         WeightMatrix res = new WeightMatrix();
         try
         {
-            BufferedReader reader = new BufferedReader(new FileReader(filePath));
+            BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()));
             
             String headerStr = reader.readLine();
             String[] header = headerStr.split(" ");
@@ -128,30 +149,22 @@ class PSSMHCpan implements Serializable
     private static final double ScoreMin = 0.8 * (1 - Math.log(50000) / Math.log(500));
     private static final double ScoreRange = ScoreMax - ScoreMin;
     
-    protected WeightMatrix pssm = null;
+    protected WeightMatrix _pssm = null;
     
     PSSMHCpan(String xmlFilename) throws Exception
     {
-        Element root = Xml.Utils.parseXml(xmlFilename);
-        Element elem = Xml.Utils.getChildElem(root, "PSSMHC");
-        if (elem == null) { return; }
-        
-        AllelePair ap = new AllelePair();
-        ap.pepLength = Integer.parseInt(elem.getAttribute("peptideLength"));
-        ap.alName = elem.getAttribute("alleleName");
-
-        String PSSMlistFilename = elem.getAttribute("fileList");
-        pssm = PSSMParser.FindAndParsePSSM(PSSMlistFilename, ap);
+        PSSMParser parser = new PSSMParser(xmlFilename);
+        _pssm = parser.FindAndParsePSSM();
     }
         
     public double ScoreOnePeptide(String peptide)
     {
-        assert (pssm != null) : "PSSM is not initialized";
+        assert (_pssm != null) : "PSSM is not initialized";
 
         double score = 0;
         for (int ch_pos=0; ch_pos<peptide.length(); ch_pos++)
         {
-            Map<Character, Double> weightRow = pssm.get(ch_pos);
+            Map<Character, Double> weightRow = _pssm.get(ch_pos);
             assert (weightRow != null) : "Invalid PSSM width";
             Double weight = weightRow.get(peptide.charAt(ch_pos));
             assert(weight != null); //assumes PSSM is parsed and peptide is validated

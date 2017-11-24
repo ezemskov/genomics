@@ -1,5 +1,7 @@
 package org.PeptideClustering;
 
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import org.PSSMHC.Xml;
 import org.w3c.dom.Element;
 
@@ -17,7 +19,10 @@ public class XmlCfg
         Element elem = Xml.Utils.getChildElem(root, "clustering");
         if (elem == null) { return; }
 
-        peptidesFilename =                      elem.getAttribute("peptidesFilePath");
+        String pathPrefix       = Xml.Utils.getChildAttr(root, "system", "pathPrefix");
+        String pepRelFilename = elem.getAttribute("peptidesFilePath");
+        
+        peptidesFilename =      FileSystems.getDefault().getPath(pathPrefix, pepRelFilename).toString();
         centersIc50Threshold = Integer.parseInt(elem.getAttribute("centersIc50Threshold"));
         matrix          =                       elem.getAttribute("matrix");
         clustersQnty    = Integer.parseInt(     elem.getAttribute("clustersQnty"));

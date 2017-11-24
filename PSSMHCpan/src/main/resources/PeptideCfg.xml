@@ -1,6 +1,7 @@
 <config>
     <spark partitions="4"/>
+    <system pathPrefix="C:\BigData\exec_env\"/>
     <generator start="1G" qnty="2G" doScore="1" doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500"/>
     <PSSMHC fileList="database\PSSM\pssm_file.list" peptideLength="9" alleleName="HLA-A0201"/>
-    <clustering peptidesFilePath="human.pepts.csv" centersIc50Threshold="500" clustersQnty="100" maxTrials="100" minSimilarity="0.9" matrix="blosum62"/>
+    <clustering peptidesFilePath="rand.pepts.csv" centersIc50Threshold="500" clustersQnty="100" maxTrials="100" minSimilarity="0.9" matrix="blosum62"/>
 </config>

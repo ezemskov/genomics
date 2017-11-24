@@ -1,6 +1,7 @@
 <config>
     <spark partitions="8"/>
+    <system pathPrefix="/storage/users_data/zemskov/exec_env/"/>
     <generator start="0" qnty="100K" doScore="1" doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500"/>
-    <PSSMHC fileList="/storage/users_data/zemskov/exec_env/database/PSSM/pssm_file.list" peptideLength="9" alleleName="HLA-A0201"/>
-    <clustering peptidesFilePath="/storage/users_data/zemskov/exec_env/human.pepts.csv" clustersQnty="100" maxTrials="100" minSimilarity="0.8" matrix="blosum62"/>
+    <PSSMHC fileList="database/PSSM/pssm_file.list" peptideLength="9" alleleName="HLA-A0201"/>
+    <clustering peptidesFilePath="rand.pepts.csv" clustersQnty="100" maxTrials="100" minSimilarity="0.8" matrix="blosum62"/>
 </config>
