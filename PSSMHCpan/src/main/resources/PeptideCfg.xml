@@ -1,7 +1,44 @@
 <config>
-    <spark partitions="4"/>
+    <!-- Amount of partitions datasets are divided to. 
+         Lower bounds for partitions quantity are : 
+            - total amount of CPU cores in all nodes of Spark cluster (dividing into fewer partitions would keep some cores/nodes idle)
+            - size of each partition must be less than 2Gb (limitation of Spark).
+         For pepetide generation, we used one partition for 100M peptides (or 5120 partitons for the universe of 512G 9-meer peptides)
+         1/10 of this number is used for cluster centers in AssignBindersToClusters-->
+    <spark partitions="100"/>
+
+    <!-- Prefix for all other paths in this xml config and inside pssm_file.list.
+         Useful when running Spark in cluster mode, where global paths are recommended -->
     <system pathPrefix="C:\BigData\exec_env\"/>
+    <!-- 
+        Configuration of peptide generation and filtering.
+        Peptides are generated in lexicographical order of amino acids, i.e. AAAAAAAAA is #0, AAAAAAAAC is #1, and YYYYYYYYY is #20^9-1
+        Note that only 9-meer peptides are generated, irrespective of peptideLength option below
+        start : number of first peptide generated. Valid suffixes are K (10^3), M (10^6), G (10^9) and T (10^12)
+        qnty : amount of peptides generated
+        doScore : calculate binding affinity/IC50 for generated peptides. PSSMHCSpark-only option
+        doBinderPersist : store generated peptides (instead of recalculating them for each subsequent operation). Affects calculation time and memory/disk storage consumption only. PSSMHCSpark-only option.
+        doBinderStore : save generated peptides into output-pssmhc directory. PSSMHCSpark-only option.
+        doBinderCount : count binder peptides. PSSMHCSpark-only option.
+        ic50Threshold : maximum IC50 of binder peptides (ones which are stored, counted, clustered etc). Measured in ?nano-Moles?. 
+Common values are 50 for strong binders and 500 for weak binders. '-1' means "do not filter peptides"
+    -->
     <generator start="1G" qnty="2G" doScore="1" doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500"/>
+    <!--
+        Configuration of IC50 estimation with PSSMHCPan.
+        fileList : path to the pssm_file.list (list of PSSM matrices from PSSMHCpan distribution)
+        peptideLength : length of peptide. Used for PSSM matrix lookup only, does not affect peptide generation.
+        alleleName : name of HLA gene allele.
+    -->
     <PSSMHC fileList="database\PSSM\pssm_file.list" peptideLength="9" alleleName="HLA-A0201"/>
+
+    <!--
+            peptidesFilePath : path to a file with cluster center peptides. File format is "<peptide><EOL>". See example in \PSSMHCpan\src\main\resources\rand.pepts.csv. AssignBindersToClusters-only option
+            centersIc50Threshold : maximum IC50 of cluster center binder peptides. See ic50Threshold description. AssignBindersToClusters-only option
+            clustersQnty : amount of clusters for k-medoids algorithm. PeptideClusteringMain-only option
+            maxTrials : maximum iterations of k-medoids algorithm. PeptideClusteringMain-only option
+            minSimilarity : minimal similarity between cluster element (generated peptide) and cluster center (read from peptidesFilePath).  AssignBindersToClusters-only option
+            matrix : name of substitution matrix used to for similarity calculation. Supported matrices are blosum[50,62,80] and pam[120,150,250].
+    -->
     <clustering peptidesFilePath="rand.pepts.csv" centersIc50Threshold="500" clustersQnty="100" maxTrials="100" minSimilarity="0.9" matrix="blosum62"/>
 </config>
