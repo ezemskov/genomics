@@ -48,12 +48,12 @@ x[i] is the amino acid in peptide x in position i
  - Submit Spark task : 
 >spark-submit --class <org.package.MainClassName> --master spark://master_hostname:7077 <package_filename.jar> [Config.xml]  
 
-  * For peptide generation, class name is ```org.PSSMHC.PSSMHCSpark``` and package filename is ```PSSMHCpan-1.0.jar```
-  * For clustering around given centers, class name is ```org.PeptideClustering.AssignBindersToClusters``` and package filename is ```peptide-clustering-1.0.jar```
-  * For k-medoids clustering, class name is ```org.PeptideClustering.PeptideClusteringMain``` and package filename is ```peptide-clustering-1.0.jar```
+  * For peptide generation, class name is `org.PSSMHC.PSSMHCSpark` and package filename is `PSSMHCpan-1.0.jar`
+  * For clustering around given centers, class name is `org.PeptideClustering.AssignBindersToClusters` and package filename is `peptide-clustering-1.0.jar`
+  * For k-medoids clustering, class name is `org.PeptideClustering.PeptideClusteringMain` and package filename is `peptide-clustering-1.0.jar`
 
-Default config filename is ```PeptideCfg.xml``` in current directory.  
-Configuration is explained in xml comments to the sample config file ```\PSSMHCpan\src\main\resources\PeptideCfg.xml```
+Default config filename is `PeptideCfg.xml` in current directory.  
+Configuration is explained in xml comments to the sample config file `\PSSMHCpan\src\main\resources\PeptideCfg.xml`
 
 So, example command line is : 
 >spark-submit --class org.PSSMHC.PSSMHCSpark --master spark://master_hostname:7077 PSSMHCpan-1.0.jar
@@ -65,11 +65,11 @@ Running each of Spark applications will produce
 In Spark standalone mode, `stdout` is written the command line windows where you've executed `spark-submit`, and Spark working directory is your current directory.  
     
     * Peptide generation produces the folder `output-pssmhc` containing a gzip-ed set of binder peptides, formatted as :  
-    ```<peptide>, <binding affinity>```
+    `<peptide>, <binding affinity>`
     * Clustering around given centers produces folders 
     - `output-centers` containing a set of binder cluster centers (format described above) 
     - `output-clusters` containing the cluster elements, formatted as :  
-    ```(<center peptide>,[<element peptide 1>,<binding affinity 1>, ..., <element peptide N>,<binding affinity N>])```
+    `(<center peptide>,[<element peptide 1>,<binding affinity 1>, ..., <element peptide N>,<binding affinity N>])`
     * K-medoids clustering only logs the solution into stdout in following format : 
 ```
 Medoid : <center peptide> totalSim <sum of similarities between center and elements> avgSim <average similarity between center and elements>  
