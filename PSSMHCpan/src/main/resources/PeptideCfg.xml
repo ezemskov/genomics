@@ -7,7 +7,7 @@
          1/10 of this number is used for cluster centers in AssignBindersToClusters-->
     <spark partitions="100"/>
 
-    <!-- Prefix for all other paths in this xml config and inside pssm_file.list.
+    <!-- Prefix for all other paths in this xml config and inside pssm_file.list
          Useful when running Spark in cluster mode, where global paths are recommended -->
     <system pathPrefix="C:\BigData\exec_env\"/>
     <!-- 
