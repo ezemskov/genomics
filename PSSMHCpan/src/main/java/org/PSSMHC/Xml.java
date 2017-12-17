@@ -2,6 +2,7 @@ package org.PSSMHC;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -65,6 +66,9 @@ public class Xml
         public int partitions;
         public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
         public int ic50Threshold;
+        String peptidesFilename = "";
+        int peptideLength = -1;
+        String alleleName = "";
         
         public Cfg(String xmlFilename) throws Exception
         {
@@ -80,6 +84,16 @@ public class Xml
             doBinderCount    = elem.getAttribute("doBinderCount").equals("1");
             ic50Threshold    = Integer.parseInt(elem.getAttribute("ic50Threshold"));            
             partitions       = Integer.parseInt(Utils.getChildAttr(root, "spark", "partitions"));
+            peptideLength    = Integer.parseInt(Utils.getChildAttr(root, "PSSMHC", "peptideLength"));
+            alleleName       = Utils.getChildAttr(root, "PSSMHC", "alleleName");
+
+            String pathPrefix     = Xml.Utils.getChildAttr(root, "system", "pathPrefix");
+            String pepRelFilename = elem.getAttribute("peptidesFilePath");
+            
+            if (!pepRelFilename.isEmpty())
+            {
+                peptidesFilename = FileSystems.getDefault().getPath(pathPrefix, pepRelFilename).toString();
+            }
         }
 
         private static long ParseLongWithSuffix(String val)

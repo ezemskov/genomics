@@ -36,15 +36,33 @@ final public class PSSMHCSpark
             SQLContext sqlc = new SQLContext(jsc);
 
             Xml.Cfg cfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
-
-            JavaRDD<String> pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
-                    .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
-                    .toJavaRDD();
             
+            JavaRDD<String> pepts;
+            long peptQnty = -1;
+            if (!cfg.peptidesFilename.isEmpty())
+            {
+                pepts = jsc.textFile(cfg.peptidesFilename, cfg.partitions);
+                peptQnty = pepts.count();
+                if (!pepts.isEmpty() && (pepts.first().length() != cfg.peptideLength))
+                {
+                    throw new Exception(String.format(
+                        "Invalid peptide length : %d in file, %d in xml config", 
+                        pepts.first().length(), cfg.peptideLength
+                    ));
+                }
+            }
+            else
+            {
+                pepts = sqlc.range(cfg.start, cfg.end, 1, cfg.partitions)
+                        .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
+                        .toJavaRDD();
+                peptQnty = cfg.end - cfg.start;
+            }
+                        
             JavaRDD<Impl.ScoredPeptide> binderPepts;
             if (!cfg.doScore)
             {
-                System.out.format("Generated %d peptides\n", pepts.count());
+                System.out.format("Generated %d peptides\n", peptQnty);
                 return;
             }
             
@@ -57,13 +75,14 @@ final public class PSSMHCSpark
             }
             
             if (cfg.doBinderStore)
-            {            
-                binderPepts.saveAsTextFile("output-pssmhc", GzipCodec.class);
+            {
+                final String resDirName = String.format("output-%s-%d", cfg.alleleName, cfg.peptideLength);
+                binderPepts.saveAsTextFile(resDirName, GzipCodec.class);
             }
             
             long binderCount = cfg.doBinderCount ? binderPepts.count() : -1;
             System.out.format("Found %d binder peptides (IC50 < %d) in total of %d\n", 
-                binderCount, cfg.ic50Threshold, (cfg.end-cfg.start));
+                binderCount, cfg.ic50Threshold, peptQnty);
         }
         catch (Exception ex)
         {

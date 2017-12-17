@@ -22,12 +22,13 @@
         doBinderCount : count binder peptides. PSSMHCSpark-only option.
         ic50Threshold : maximum IC50 of binder peptides (ones which are stored, counted, clustered etc). Measured in ?nano-Moles?. 
 Common values are 50 for strong binders and 500 for weak binders. '-1' means "do not filter peptides"
+        peptidesFilePath : path to a file with peptides to be scored. If empty, then peptides are generated.
     -->
-    <generator start="1G" qnty="2G" doScore="1" doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500"/>
+    <generator start="1G" qnty="2G" doScore="1" doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500" peptidesFilePath="rand.pepts.csv"/>
     <!--
         Configuration of IC50 estimation with PSSMHCPan.
         fileList : path to the pssm_file.list (list of PSSM matrices from PSSMHCpan distribution)
-        peptideLength : length of peptide. Used for PSSM matrix lookup only, does not affect peptide generation.
+        peptideLength : length of peptide. Used for PSSM matrix lookup only, does not affect peptide generation. Also used to check length of peptides loaded from peptidesFilePath.
         alleleName : name of HLA gene allele.
     -->
     <PSSMHC fileList="database\PSSM\pssm_file.list" peptideLength="9" alleleName="HLA-A0201"/>

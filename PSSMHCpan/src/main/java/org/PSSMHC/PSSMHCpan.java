@@ -9,11 +9,11 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import org.w3c.dom.Element;
 
-class WeightMatrixColumn extends HashMap<Character, Double> implements Serializable
+class WeightMatrixCol extends HashMap<Character, Double> implements Serializable
 {
-    WeightMatrixColumn() { super(Impl.Consts.aLen, 1.0f); }
+    WeightMatrixCol() { super(Impl.Consts.aLen, 1.0f); }
 }
-class WeightMatrix extends ArrayList<WeightMatrixColumn> implements Serializable {}
+class WeightMatrix extends ArrayList<WeightMatrixCol> implements Serializable {}
 
 class AllelePair
 {
@@ -59,86 +59,77 @@ class PSSMParser
 
     //pssmListPath is pssm_file.list
     //ap is a 'allele name/length' pair
-    public WeightMatrix FindAndParsePSSM()
+    public WeightMatrix FindAndParsePSSM() throws Exception
     {
-        try
+        final Path pssmListPath = FileSystems.getDefault().getPath(_pathPrefix, _pssmListPath);
+        BufferedReader reader = new BufferedReader(new FileReader(pssmListPath.toFile()));
+        while (reader.ready())
         {
-            final Path pssmListPath = FileSystems.getDefault().getPath(_pathPrefix, _pssmListPath);
-            BufferedReader reader = new BufferedReader(new FileReader(pssmListPath.toFile()));
-            while (reader.ready())
+            String rowStr = reader.readLine();
+            String[] row = rowStr.split("\t");
+            if (row.length != 3)
             {
-                String rowStr = reader.readLine();
-                String[] row = rowStr.split("\t");
-                if (row.length != 3)
-                {
-                    System.err.format("Skip invalid line PSSM list line '%s'\n", rowStr);
-                    continue;
-                }
-                
-                if (_ap.alName.equals(row[1]) && 
-                   (_ap.pepLength == Integer.parseInt(row[2])))
-                {
-                    final String pssmFilePathStr = row[0];
-                    final Path pssmPath = FileSystems.getDefault().getPath(_pathPrefix, pssmFilePathStr);
-                    return ParsePSSM(pssmPath);
-                }
+                System.err.format("Skip invalid line PSSM list line '%s'\n", rowStr);
+                continue;
+            }
+
+            if (_ap.alName.equals(row[1]) && 
+               (_ap.pepLength == Integer.parseInt(row[2])))
+            {
+                final String pssmFilePathStr = row[0];
+                final Path pssmPath = FileSystems.getDefault().getPath(_pathPrefix, pssmFilePathStr);
+                return ParsePSSM(pssmPath);
             }
         }
-        catch (Exception e) 
-        {
-            System.err.format("Error reading %s : %s\n", _pssmListPath, e.getMessage());
-        }        
-        return null;
+        
+        throw new Exception(String.format("PSSM for allele %s length %d was not found in %s\n", 
+            _ap.alName, _ap.pepLength, pssmListPath.toString()));
     }
 
     //filePath is database/PSSM/HLA-xxxxx_N.pssm
-    private static WeightMatrix ParsePSSM(Path filePath)
+    private static WeightMatrix ParsePSSM(Path filePath) throws Exception
     {
         WeightMatrix res = new WeightMatrix();
-        try
+        BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()));
+
+        String headerStr = reader.readLine();
+        String[] header = headerStr.split(" ");
+        if (header.length != 2)
         {
-            BufferedReader reader = new BufferedReader(new FileReader(filePath.toFile()));
-            
-            String headerStr = reader.readLine();
-            String[] header = headerStr.split(" ");
-            if (header.length != 2)
+            throw new Exception(String.format(
+                "Invalid header '%s' of %s\n", headerStr, filePath.toString()));
+        }
+
+        int colsQnty = Integer.parseInt(header[1]);    //matrix columns count (peptide length)
+        for (int iCol=0; iCol<colsQnty; iCol++)
+        {
+            res.add(new WeightMatrixCol());
+        }
+
+        int iRow = 0;
+        while (reader.ready() && (iRow < Impl.Consts.aLen))
+        {
+            String[] row = reader.readLine().split("\t");
+            if (row.length != colsQnty)
             {
-                System.err.format("Invalid header '%s' of %s\n", headerStr, filePath);
+                throw new Exception(String.format(
+                    "Invalid PSSM of %d columns in %s\n", row.length, filePath.toString()));
             }
-            
-            int colsQnty = Integer.parseInt(header[1]);    //matrix columns count (peptide length)
+
             for (int iCol=0; iCol<colsQnty; iCol++)
             {
-                res.add(new WeightMatrixColumn());
+                res.get(iCol).put(Impl.Consts.alphabet.charAt(iRow), Double.parseDouble(row[iCol]));
             }
 
-            int iRow = 0;
-                while (reader.ready() && (iRow < Impl.Consts.aLen))
-            {
-                String[] row = reader.readLine().split("\t");
-                if (row.length > colsQnty)
-                {
-                    System.err.format("Invalid PSSM size : [%d by %d]\n", iRow, row.length);
-                    return res;
-                }
+            iRow +=1;
+        }
 
-                for (int iCol=0; iCol<colsQnty; iCol++)
-                {
-                    res.get(iCol).put(new Character(Impl.Consts.alphabet.charAt(iRow)), Double.parseDouble(row[iCol]));
-                }
-
-                iRow +=1;
-            }
-
-            if (iRow != Impl.Consts.aLen)
-            {
-                System.err.format("Invalid PSSM of %d rows\n", iRow);
-            }
-        } 
-        catch (Exception e) 
+        if (iRow != Impl.Consts.aLen)
         {
-            System.err.format("Error reading %s : %s\n", filePath, e.getMessage());
-        }        
+            throw new Exception(String.format(
+                "Invalid PSSM of %d rows in %s\n", iRow, filePath.toString()));
+        }
+
         return res;
     }
 }
@@ -155,19 +146,25 @@ class PSSMHCpan implements Serializable
     {
         PSSMParser parser = new PSSMParser(xmlFilename);
         _pssm = parser.FindAndParsePSSM();
+        assert(_pssm != null);  //assured in PSSMParser
     }
         
     public double ScoreOnePeptide(String peptide)
     {
-        assert (_pssm != null) : "PSSM is not initialized";
-
+        if (_pssm.size() != peptide.length())
+        {
+            return Double.NaN;
+        }
+        
         double score = 0;
         for (int ch_pos=0; ch_pos<peptide.length(); ch_pos++)
         {
-            Map<Character, Double> weightRow = _pssm.get(ch_pos);
-            assert (weightRow != null) : "Invalid PSSM width";
-            Double weight = weightRow.get(peptide.charAt(ch_pos));
-            assert(weight != null); //assumes PSSM is parsed and peptide is validated
+            Map<Character, Double> weightCol = _pssm.get(ch_pos);
+            Double weight = weightCol.get(peptide.charAt(ch_pos));
+            if (weight == null)
+            {
+                return Double.NaN;
+            }
             score += weight;
         }
 
