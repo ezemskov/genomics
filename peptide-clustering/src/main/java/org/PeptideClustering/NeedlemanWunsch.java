@@ -924,7 +924,7 @@ public class NeedlemanWunsch
 
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
-            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
+            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(pssmhcCfg.pssmConfigs.get(0));
             Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
             
             JavaRDD<String> binders = 

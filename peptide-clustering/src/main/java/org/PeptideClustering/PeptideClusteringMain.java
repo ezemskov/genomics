@@ -5,6 +5,7 @@ import info.debatty.spark.kmedoids.Solution;
 import info.debatty.spark.kmedoids.budget.TrialsBudget;
 import info.debatty.spark.kmedoids.neighborgenerator.ClaransNeighborGenerator;
 import org.PSSMHC.Impl;
+import org.PSSMHC.PeptideGen;
 import org.PSSMHC.Xml;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -14,7 +15,7 @@ public class PeptideClusteringMain
 {
     public static void main(String[] args) throws Exception 
     {
-        try
+        //try
         {
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
 
@@ -23,7 +24,10 @@ public class PeptideClusteringMain
             JavaSparkContext jsc = new JavaSparkContext(conf);
 
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
-            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
+            Xml.PSSMCfg pssmConfig = pssmhcCfg.getSinglePSSMCfg();
+            pssmConfig.peptideLength = PeptideGen.pepLen; //NB! should be some extra parameter in xml
+
+            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(pssmConfig);
             Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
             
             JavaRDD<String> binders = 
@@ -57,9 +61,11 @@ public class PeptideClusteringMain
             }
             jsc.close();
         }
+        /*
         catch (Exception ex)
         {
             System.err.print(ex.toString() + "\n");
         }
+        */
     }
 }

@@ -2,7 +2,10 @@ package org.PSSMHC;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.ArrayList;
 import java.nio.file.FileSystems;
+import java.nio.file.FileSystem;
 import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,6 +18,31 @@ import org.xml.sax.SAXException;
 
 public class Xml
 {
+    public static class StringIntPair
+    {
+        StringIntPair(String first_, int second_)
+        {
+            first = first_;
+            second = second_;
+        }
+            
+        @Override
+        public int hashCode()
+        {
+            return String.format("%s_%d", first, second).hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            StringIntPair ap = (StringIntPair)obj;
+            return (ap != null) && (first.equals(ap.first)) && (second == ap.second);
+        }
+
+        public String first; 
+        public int second; 
+    }
+    
     public static class Utils
     {
         public static String DefaultXmlFilename = "PeptideCfg.xml";
@@ -33,30 +61,57 @@ public class Xml
             return domDoc.getDocumentElement();
         }
 
-        public static Element getChildElem(Node parent, String childName)
+        public static List<Element> getAllChildNodes(Node parent, String childName)
         {
+            ArrayList<Element> res = new ArrayList<>();
+            if (parent == null)
+            {
+                return res;
+            }
+            
             NodeList children = parent.getChildNodes();
             for (int i = 0; i < children.getLength(); ++i)
             {
                 Node child = children.item(i);
-                if (!child.getNodeName().equals(childName))
+                if (child.getNodeName().equals(childName) &&
+                    (child.getNodeType() == Node.ELEMENT_NODE))
                 {
-                    continue;
+                    res.add((Element)child);
                 }
-                if (child.getNodeType() != Node.ELEMENT_NODE)
-                {
-                    return null;
-                }
-                return (Element) child;
             }
-            return null;
+            
+            return res;
+        }
+        
+        public static Element getChildNode(Node parent, String childName) throws Exception
+        {
+            List<Element> res = getAllChildNodes(parent, childName);
+            if (res.isEmpty())
+            {
+                throw new Exception("<" + parent.getNodeName() + "><" + childName + "> is not found");
+            }
+            
+            return res.get(0);
         }
 
-        public static String getChildAttr(Node parent, String childName, String childAttr)
+        public static String getChildAttr(Node parent, String childName, String childAttr) throws Exception
         {
-            Element child = getChildElem(parent, childName);
-            return (child != null) ? child.getAttribute(childAttr) : "";
+            final String res = getChildNode(parent, childName).getAttribute(childAttr);
+            if (res.isEmpty())
+            {
+                throw new Exception("<" + parent.getNodeName() + "><" + 
+                    childName + " " + childAttr + "=\"...\"/> is not found or empty");
+            }
+            return res;
         }
+    }
+
+    public static class PSSMCfg
+    {
+        public String pathPrefix = "";
+        public String pssmListRelPath = "";
+        public String allele = "";
+        public int    peptideLength = -1;
     }
 
     public static class Cfg
@@ -66,36 +121,62 @@ public class Xml
         public int partitions;
         public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
         public int ic50Threshold;
-        String peptidesFilename = "";
-        int peptideLength = -1;
-        String alleleName = "";
+        
+        public ArrayList<StringIntPair> peptideFiles = new ArrayList<>();
+        public ArrayList<PSSMCfg> pssmConfigs = new ArrayList<>();
+        public String pssmListPath = "";
         
         public Cfg(String xmlFilename) throws Exception
         {
-            Element root = Utils.parseXml(xmlFilename);
-            Element elem = Utils.getChildElem(root, "generator");
-            if (elem == null) { return; }
+            final Element root = Utils.parseXml(xmlFilename);
             
-            start            = ParseLongWithSuffix(elem.getAttribute("start"));
-            end      = start + ParseLongWithSuffix(elem.getAttribute("qnty"));
-            doScore          = elem.getAttribute("doScore").equals("1");
-            doBinderPersist  = elem.getAttribute("doBinderPersist").equals("1");
-            doBinderStore    = elem.getAttribute("doBinderStore").equals("1");
-            doBinderCount    = elem.getAttribute("doBinderCount").equals("1");
-            ic50Threshold    = Integer.parseInt(elem.getAttribute("ic50Threshold"));            
+            start            = ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "start"));
+            end      = start + ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "qnty"));
+            doScore          = Utils.getChildAttr(root, "binders", "doScore").equals("1");
+            doBinderPersist  = Utils.getChildAttr(root, "binders", "doBinderPersist").equals("1");
+            doBinderStore    = Utils.getChildAttr(root, "binders", "doBinderStore").equals("1");
+            doBinderCount    = Utils.getChildAttr(root, "binders", "doBinderCount").equals("1");
+            ic50Threshold    = Integer.parseInt(Utils.getChildAttr(root, "binders", "ic50Threshold"));            
             partitions       = Integer.parseInt(Utils.getChildAttr(root, "spark", "partitions"));
-            peptideLength    = Integer.parseInt(Utils.getChildAttr(root, "PSSMHC", "peptideLength"));
-            alleleName       = Utils.getChildAttr(root, "PSSMHC", "alleleName");
-
-            String pathPrefix     = Xml.Utils.getChildAttr(root, "system", "pathPrefix");
-            String pepRelFilename = elem.getAttribute("peptidesFilePath");
+                        
+            final FileSystem fs     = FileSystems.getDefault();
+            final String pathPrefix = Utils.getChildAttr(root, "system", "pathPrefix");
             
-            if (!pepRelFilename.isEmpty())
             {
-                peptidesFilename = FileSystems.getDefault().getPath(pathPrefix, pepRelFilename).toString();
+                final Element elem = Utils.getChildNode(root, "PSSMHC");
+                List<Element> elemChildren = Utils.getAllChildNodes(elem, "allele");
+                for(Element child : elemChildren)
+                {
+                    PSSMCfg pssmCfg = new PSSMCfg();
+                    pssmCfg.pathPrefix = pathPrefix;
+                    pssmCfg.pssmListRelPath = Utils.getChildAttr(root, "PSSMHC", "fileList");
+                    pssmCfg.allele = child.getTextContent();
+                    pssmConfigs.add(pssmCfg);
+                }
+            }{
+                final Element elem = Utils.getChildNode(root, "binders");
+                List<Element> elemChildren = Utils.getAllChildNodes(elem, "peptidesFile");
+                for(Element child : elemChildren)
+                {
+                    final String pepRelPath = child.getAttribute("path");
+                    peptideFiles.add(new StringIntPair(
+                        fs.getPath(pathPrefix, pepRelPath).toString(), 
+                        Integer.parseInt(child.getAttribute("peptideLength"))
+                    ));
+                }
             }
         }
 
+        public PSSMCfg getSinglePSSMCfg() throws Exception
+        {
+            if (pssmConfigs.size() != 1)
+            {
+                throw new Exception("<PSSMHC><allele> is not found or not unique");
+            }
+            
+            return pssmConfigs.get(0);
+        }
+            
         private static long ParseLongWithSuffix(String val)
         {
             int suffixPos = val.length()-1;

@@ -19,9 +19,9 @@ public class Impl
                             implements Serializable,
                             Function<String,ScoredPeptide>
     {
-        public PSSMHCpanSparkFunc(String xmlFilename) throws Exception
+        public PSSMHCpanSparkFunc(Xml.PSSMCfg cfg) throws Exception
         {
-            super(xmlFilename);
+            super(cfg);
         }
             
         @Override

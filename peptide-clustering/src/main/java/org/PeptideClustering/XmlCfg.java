@@ -15,7 +15,7 @@ public class XmlCfg
     public XmlCfg(String xmlFilename) throws Exception
     {
         Element root = Xml.Utils.parseXml(xmlFilename);
-        Element elem = Xml.Utils.getChildElem(root, "clustering");
+        Element elem = Xml.Utils.getChildNode(root, "clustering");
         if (elem == null) { return; }
 
         String pathPrefix       = Xml.Utils.getChildAttr(root, "system", "pathPrefix");

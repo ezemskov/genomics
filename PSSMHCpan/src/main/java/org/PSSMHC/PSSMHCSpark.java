@@ -39,15 +39,18 @@ final public class PSSMHCSpark
             
             JavaRDD<String> pepts;
             long peptQnty = -1;
-            if (!cfg.peptidesFilename.isEmpty())
+            int peptideLengthInFile = -1;
+            if (!cfg.peptideFiles.isEmpty())
             {
-                pepts = jsc.textFile(cfg.peptidesFilename, cfg.partitions);
+                Xml.StringIntPair peptFile = cfg.peptideFiles.get(0);
+                peptideLengthInFile = peptFile.second;
+                pepts = jsc.textFile(peptFile.first, cfg.partitions);
                 peptQnty = pepts.count();
-                if (!pepts.isEmpty() && (pepts.first().length() != cfg.peptideLength))
+                if (!pepts.isEmpty() && (pepts.first().length() != peptideLengthInFile))
                 {
                     throw new Exception(String.format(
                         "Invalid peptide length : %d in file, %d in xml config", 
-                        pepts.first().length(), cfg.peptideLength
+                        pepts.first().length(), peptideLengthInFile
                     ));
                 }
             }
@@ -66,7 +69,10 @@ final public class PSSMHCSpark
                 return;
             }
             
-            binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args)))
+            Xml.PSSMCfg pssmConfig = cfg.getSinglePSSMCfg();
+            pssmConfig.peptideLength = peptideLengthInFile; //or in generator
+                
+            binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(pssmConfig))
                                .filter(new Impl.ScoreFilterSparkFunc(cfg.ic50Threshold));
                                     
             if (cfg.doBinderPersist)
@@ -76,7 +82,7 @@ final public class PSSMHCSpark
             
             if (cfg.doBinderStore)
             {
-                final String resDirName = String.format("output-%s-%d", cfg.alleleName, cfg.peptideLength);
+                final String resDirName = String.format("output-%s-%d", pssmConfig.allele, pssmConfig.peptideLength);
                 binderPepts.saveAsTextFile(resDirName, GzipCodec.class);
             }
             
@@ -86,7 +92,7 @@ final public class PSSMHCSpark
         }
         catch (Exception ex)
         {
-            System.err.print(ex.toString() + "\n");
+            System.err.println("Error : " + ex.getMessage());
         }
     }
 }

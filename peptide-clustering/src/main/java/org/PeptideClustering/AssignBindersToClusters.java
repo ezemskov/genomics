@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import org.PSSMHC.Impl;
+import org.PSSMHC.PeptideGen;
 import org.PSSMHC.Xml;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -65,7 +66,7 @@ public class AssignBindersToClusters
     
     public static void main(String[] args) throws Exception 
     {
-        try
+        //try
         {
             SparkConf conf = new SparkConf()
                     .setAppName("PeptideClustring2");
@@ -74,7 +75,11 @@ public class AssignBindersToClusters
 
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
-            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(Xml.Utils.firstOrDef(args));
+            
+            Xml.PSSMCfg pssmConfig = pssmhcCfg.getSinglePSSMCfg();
+            pssmConfig.peptideLength = PeptideGen.pepLen;
+
+            Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(pssmConfig);
             Impl.ScoreFilterSparkFunc bindersFilterSparkFunc = new Impl.ScoreFilterSparkFunc((double)pssmhcCfg.ic50Threshold);
             
             final long timeStart = System.currentTimeMillis();
@@ -193,10 +198,12 @@ public class AssignBindersToClusters
 
             jsc.close();
         }
+        /*
         catch (Exception ex)
         {
             System.err.print(ex.toString() + "\n");
         }
+        */
     }
 }
 
