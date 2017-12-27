@@ -45,7 +45,7 @@ class PSSMParser
             }
         }
         
-        throw new Exception(String.format("PSSM for allele %s length %d was not found in %s\n", 
+        throw new Exception(String.format("PSSM for allele %s length %d was not found in %s", 
             cfg.allele, cfg.peptideLength, pssmListPath.toString()));
     }
 
@@ -60,7 +60,7 @@ class PSSMParser
         if (header.length != 2)
         {
             throw new Exception(String.format(
-                "Invalid header '%s' of %s\n", headerStr, filePath.toString()));
+                "Invalid header '%s' of %s", headerStr, filePath.toString()));
         }
 
         int colsQnty = Integer.parseInt(header[1]);    //matrix columns count (peptide length)
@@ -76,7 +76,7 @@ class PSSMParser
             if (row.length != colsQnty)
             {
                 throw new Exception(String.format(
-                    "Invalid PSSM of %d columns in %s\n", row.length, filePath.toString()));
+                    "Invalid PSSM of %d columns in %s", row.length, filePath.toString()));
             }
 
             for (int iCol=0; iCol<colsQnty; iCol++)
@@ -90,7 +90,7 @@ class PSSMParser
         if (iRow != Impl.Consts.aLen)
         {
             throw new Exception(String.format(
-                "Invalid PSSM of %d rows in %s\n", iRow, filePath.toString()));
+                "Invalid PSSM of %d rows in %s", iRow, filePath.toString()));
         }
 
         return res;

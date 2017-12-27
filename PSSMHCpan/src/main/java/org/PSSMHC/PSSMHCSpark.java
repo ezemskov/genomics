@@ -62,33 +62,47 @@ final public class PSSMHCSpark
                 peptQnty = cfg.end - cfg.start;
             }
                         
-            JavaRDD<Impl.ScoredPeptide> binderPepts;
             if (!cfg.doScore)
             {
                 System.out.format("Generated %d peptides\n", peptQnty);
                 return;
             }
             
-            Xml.PSSMCfg pssmConfig = cfg.getSinglePSSMCfg();
-            pssmConfig.peptideLength = peptideLengthInFile; //or in generator
+            Impl.PSSMHCpanSparkFunc   PSSMHCpanFunc = null;
+            Impl.ScoreFilterSparkFunc filterFunc = new Impl.ScoreFilterSparkFunc(cfg.ic50Threshold);
+            for (Xml.PSSMCfg pssmConfig : cfg.pssmConfigs)
+            {
+                pssmConfig.peptideLength = peptideLengthInFile; //or in generator
                 
-            binderPepts = pepts.map(new Impl.PSSMHCpanSparkFunc(pssmConfig))
-                               .filter(new Impl.ScoreFilterSparkFunc(cfg.ic50Threshold));
-                                    
-            if (cfg.doBinderPersist)
-            {
-                binderPepts.persist(StorageLevel.MEMORY_AND_DISK_SER());
+                try
+                {
+                    PSSMHCpanFunc = new Impl.PSSMHCpanSparkFunc(pssmConfig);
+                }
+                catch(Exception ex)
+                {
+                    System.err.println("Skipped : " + ex.getMessage());
+                    continue;
+                }
+                    
+                JavaRDD<Impl.ScoredPeptide> binders = pepts.map(PSSMHCpanFunc)
+                                                           .filter(filterFunc);
+                if (cfg.doBinderPersist)
+                {
+                    binders.persist(StorageLevel.MEMORY_AND_DISK_SER());
+                }
+
+                if (cfg.doBinderStore)
+                {
+                    final String resDirName = String.format("output-%s-%d", 
+                        pssmConfig.allele, pssmConfig.peptideLength);
+                    binders.saveAsTextFile(resDirName, GzipCodec.class);
+                }
+
+                long binderCount = cfg.doBinderCount ? binders.count() : -1;
+                System.out.format("%s/%d : found %d binder peptides (IC50 < %d) in total of %d\n", 
+                    pssmConfig.allele, pssmConfig.peptideLength, 
+                    binderCount, cfg.ic50Threshold, peptQnty);
             }
-            
-            if (cfg.doBinderStore)
-            {
-                final String resDirName = String.format("output-%s-%d", pssmConfig.allele, pssmConfig.peptideLength);
-                binderPepts.saveAsTextFile(resDirName, GzipCodec.class);
-            }
-            
-            long binderCount = cfg.doBinderCount ? binderPepts.count() : -1;
-            System.out.format("Found %d binder peptides (IC50 < %d) in total of %d\n", 
-                binderCount, cfg.ic50Threshold, peptQnty);
         }
         catch (Exception ex)
         {
