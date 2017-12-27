@@ -22,14 +22,13 @@
     
     <!-- 
         Configuration of binder peptides calculation and filtering.
-        doScore : calculate binding affinity/IC50 for peptides. PSSMHCSpark-only option
         doBinderPersist : store generated peptides (instead of recalculating them for each subsequent operation). Affects calculation time and memory/disk storage consumption only. PSSMHCSpark-only option.
         doBinderStore : save generated peptides into output-pssmhc directory. PSSMHCSpark-only option.
         doBinderCount : count binder peptides. PSSMHCSpark-only option.
         ic50Threshold : maximum IC50 of binder peptides (ones which are stored, counted, clustered etc). Measured in ?nano-Moles?. 
         Common values are 50 for strong binders and 500 for weak binders. '-1' means "do not filter peptides"
     -->
-    <binders doScore="1" doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500">
+    <binders doBinderPersist="1" doBinderStore="1" doBinderCount="1" ic50Threshold="500">
         <!-- 
         path : path to a file with peptides to be scored. If empty, then peptides are generated according to <generator> tag
         peptideLength : length of peptides in the file

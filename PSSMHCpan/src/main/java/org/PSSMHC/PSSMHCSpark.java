@@ -117,11 +117,6 @@ final public class PSSMHCSpark
         if (_cfg.peptideFiles.isEmpty())
         {
             generatePeptideSet();
-            if (!_cfg.doScore)   //todo : remove if
-            {
-                System.out.format("Generated %d peptides\n", _peptQnty);
-                return;
-            }
             processPeptideSet();
             return;
         }

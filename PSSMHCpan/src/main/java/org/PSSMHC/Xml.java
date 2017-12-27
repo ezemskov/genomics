@@ -119,7 +119,7 @@ public class Xml
         public long start;
         public long end;
         public int partitions;
-        public boolean doScore, doBinderPersist, doBinderStore, doBinderCount;
+        public boolean doBinderPersist, doBinderStore, doBinderCount;
         public int ic50Threshold;
         
         public ArrayList<StringIntPair> peptideFiles = new ArrayList<>();
@@ -132,7 +132,6 @@ public class Xml
             
             start            = ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "start"));
             end      = start + ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "qnty"));
-            doScore          = Utils.getChildAttr(root, "binders", "doScore").equals("1");
             doBinderPersist  = Utils.getChildAttr(root, "binders", "doBinderPersist").equals("1");
             doBinderStore    = Utils.getChildAttr(root, "binders", "doBinderStore").equals("1");
             doBinderCount    = Utils.getChildAttr(root, "binders", "doBinderCount").equals("1");
@@ -161,7 +160,7 @@ public class Xml
                     final String pepRelPath = child.getAttribute("path");
                     peptideFiles.add(new StringIntPair(
                         fs.getPath(pathPrefix, pepRelPath).toString(), 
-                        Integer.parseInt(child.getAttribute("peptideLength"))
+                        Integer.parseInt(child.getAttribute("peptideLength"))   //todo : proper error message is attribute not found
                     ));
                 }
             }
