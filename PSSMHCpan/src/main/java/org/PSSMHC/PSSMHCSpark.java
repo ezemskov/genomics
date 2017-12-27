@@ -12,12 +12,14 @@ import org.apache.spark.serializer.KryoRegistrator;
 import com.esotericsoftware.kryo.Kryo; 
 import com.esotericsoftware.kryo.serializers.FieldSerializer; 
 
-final class PSSMHCSpark
+final public class PSSMHCSpark
 {
     Xml.Cfg _cfg;
     JavaRDD<String> _pepts;
     long _peptQnty;
     int _peptideLength;
+    String _peptFilename;
+    JavaSparkContext _jsc;
     
     public static class ScPepRegistrator implements KryoRegistrator 
     { 
@@ -35,6 +37,11 @@ final class PSSMHCSpark
         _pepts = null;
         _peptQnty = -1;
         _peptideLength = -1;
+        _peptFilename = "";
+
+        SparkConf spconf = new SparkConf().setAppName("PSSMHCSpark"); 
+        spconf.set("spark.kryo.registrator", ScPepRegistrator.class.getName()); 
+        _jsc = new JavaSparkContext(spconf);
     }
     
     private void processPeptideSet()
@@ -64,8 +71,8 @@ final class PSSMHCSpark
 
             if (_cfg.doBinderStore)
             {
-                final String resDirName = String.format("output-%s-%d", 
-                    pssmConfig.allele, pssmConfig.peptideLength);
+                final String resDirName = String.format("%s-%s-%d", 
+                    _peptFilename, pssmConfig.allele, pssmConfig.peptideLength);
                 binders.saveAsTextFile(resDirName, GzipCodec.class);
             }
 
@@ -76,45 +83,56 @@ final class PSSMHCSpark
         }
     }
 
+    public void generatePeptideSet()
+    {
+        _peptFilename = "gen";
+
+        SQLContext sqlc = new SQLContext(_jsc);
+        _pepts = sqlc.range(_cfg.start, _cfg.end, 1, _cfg.partitions)
+                .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
+                .toJavaRDD();
+        _peptQnty = _cfg.end - _cfg.start;
+        _peptideLength = Impl.PeptideGenSparkFunc.pepLen;
+    }
+
+    public boolean readPeptideSetFromFile(Xml.StringIntPair peptFileCfg)
+    {
+        _peptideLength = peptFileCfg.second;
+        _peptFilename = peptFileCfg.first;
+        _pepts = _jsc.textFile(_peptFilename, _cfg.partitions);
+        _peptQnty = _pepts.count();
+        
+        final boolean res = _pepts.isEmpty() || 
+                           (_pepts.first().length() == _peptideLength);
+        if (!res)
+        {
+            System.err.format("Ignore file %s with invalid peptide length %d, %d in xml config\n", 
+                _peptFilename, _pepts.first().length(), _peptideLength);
+        }
+        return res;
+    }
+    
     public void run() throws Exception 
     {
-        SparkConf spconf = new SparkConf()
-            .setAppName("PSSMHCSpark"); 
-
-        spconf.set("spark.kryo.registrator", ScPepRegistrator.class.getName()); 
-        JavaSparkContext jsc = new JavaSparkContext(spconf);
-        SQLContext sqlc = new SQLContext(jsc);
-
-        if (!_cfg.peptideFiles.isEmpty())
+        if (_cfg.peptideFiles.isEmpty())
         {
-            Xml.StringIntPair peptFile = _cfg.peptideFiles.get(0);
-            _peptideLength = peptFile.second;
-            _pepts = jsc.textFile(peptFile.first, _cfg.partitions);
-            _peptQnty = _pepts.count();
-            if (!_pepts.isEmpty() && (_pepts.first().length() != _peptideLength))
+            generatePeptideSet();
+            if (!_cfg.doScore)   //todo : remove if
             {
-                throw new Exception(String.format(
-                    "Invalid peptide length : %d in file, %d in xml config", 
-                    _pepts.first().length(), _peptideLength
-                ));
+                System.out.format("Generated %d peptides\n", _peptQnty);
+                return;
             }
-        }
-        else
-        {
-            _pepts = sqlc.range(_cfg.start, _cfg.end, 1, _cfg.partitions)
-                    .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
-                    .toJavaRDD();
-            _peptQnty = _cfg.end - _cfg.start;
-            _peptideLength = Impl.PeptideGenSparkFunc.pepLen;
-        }
-
-        if (!_cfg.doScore)   //todo : remove if
-        {
-            System.out.format("Generated %d peptides\n", _peptQnty);
+            processPeptideSet();
             return;
         }
 
-        processPeptideSet();
+        for (Xml.StringIntPair peptFile : _cfg.peptideFiles)
+        {
+            if (readPeptideSetFromFile(peptFile))
+            {
+                processPeptideSet();
+            }
+        }
     }
     
     public static void main(String[] args) throws Exception 
