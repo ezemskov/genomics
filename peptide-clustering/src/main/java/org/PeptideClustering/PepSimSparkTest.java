@@ -23,9 +23,10 @@ public class PepSimSparkTest
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
             
+            Xml.PeptideGenCfg genCfg = pssmhcCfg.genCfg;
             JavaRDD<String> pepts = 
-                sqlc.range(pssmhcCfg.genCfg.start, pssmhcCfg.genCfg.end, 1, appCfg.partitions)
-                .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
+                sqlc.range(genCfg.start, genCfg.end, 1, appCfg.partitions)
+                .map(new Impl.PeptideGenSparkFunc(genCfg.peptideLength), Encoders.STRING())
                 .toJavaRDD();
             
             pepts.cache();

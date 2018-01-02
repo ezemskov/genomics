@@ -75,9 +75,10 @@ public class AssignBindersToClusters
 
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             XmlCfg appCfg = new XmlCfg(Xml.Utils.firstOrDef(args));
-            
+
+            Xml.PeptideGenCfg genCfg = pssmhcCfg.genCfg;
             Xml.PSSMCfg pssmConfig = pssmhcCfg.getSinglePSSMCfg();
-            pssmConfig.peptideLength = PeptideGen.pepLen;
+            pssmConfig.peptideLength = genCfg.peptideLength;
 
             Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(pssmConfig);
             Impl.ScoreFilterSparkFunc bindersFilterSparkFunc = new Impl.ScoreFilterSparkFunc((double)pssmhcCfg.ic50Threshold);
@@ -86,8 +87,8 @@ public class AssignBindersToClusters
             
             int fewerPartitions = (int)(0.1 * appCfg.partitions);
             JavaRDD<String> binders = 
-                sqlc.range(pssmhcCfg.genCfg.start, pssmhcCfg.genCfg.end, 1, appCfg.partitions)
-                .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
+                sqlc.range(genCfg.start, genCfg.end, 1, appCfg.partitions)
+                .map(new Impl.PeptideGenSparkFunc(genCfg.peptideLength), Encoders.STRING())
                 .toJavaRDD()
                 .map(pssmhcSparkFunc)
                 .filter(bindersFilterSparkFunc)

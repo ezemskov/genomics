@@ -89,11 +89,11 @@ final public class PSSMHCSpark
 
         Xml.PeptideGenCfg genCfg = _cfg.genCfg;
         SQLContext sqlc = new SQLContext(_jsc);
-        _pepts = sqlc.range(genCfg.start, genCfg.end, 1, _cfg.partitions)
-                .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
-                .toJavaRDD();
+        _peptideLength = genCfg.peptideLength;
         _peptQnty = genCfg.end - genCfg.start;
-        _peptideLength = Impl.PeptideGenSparkFunc.pepLen;
+        _pepts = sqlc.range(genCfg.start, genCfg.end, 1, _cfg.partitions)
+                .map(new Impl.PeptideGenSparkFunc(_peptideLength), Encoders.STRING())
+                .toJavaRDD();
     }
 
     public boolean readPeptideSetFromFile(Xml.StringIntPair peptFileCfg)

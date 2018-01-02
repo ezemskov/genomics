@@ -36,6 +36,8 @@ public class Impl
                             implements Serializable, 
                             MapFunction<Row, String>
     {
+        public PeptideGenSparkFunc(int pepLen) { super(pepLen); }
+        
         @Override
         public String call(Row idx)
         {

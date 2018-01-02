@@ -84,10 +84,10 @@ public class PeptideSimilarityTest
     {
         MaxPosDiff m = new MaxPosDiff(new SubstMatrices.Blosum62());
 
-        assertEquals(PeptideGen.pepLen, m.lowerBound(-1.0));
-        assertEquals(PeptideGen.pepLen, m.lowerBound(-0.15));
-        assertEquals(PeptideGen.pepLen, m.lowerBound(-0.1));
-        assertEquals(PeptideGen.pepLen, m.lowerBound(0.0));
+        assertEquals(PeptideGen.PepLenDefault, m.lowerBound(-1.0));
+        assertEquals(PeptideGen.PepLenDefault, m.lowerBound(-0.15));
+        assertEquals(PeptideGen.PepLenDefault, m.lowerBound(-0.1));
+        assertEquals(PeptideGen.PepLenDefault, m.lowerBound(0.0));
 
         assertEquals(8, m.lowerBound(0.1));
         assertEquals(8, m.lowerBound(0.16));

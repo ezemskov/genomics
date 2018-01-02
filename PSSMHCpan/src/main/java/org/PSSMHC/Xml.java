@@ -116,8 +116,9 @@ public class Xml
 
     public static class PeptideGenCfg
     {
-        public long start;
-        public long end;
+        public long start = -1;
+        public long end = -1;
+        public int  peptideLength = -1;
     }
     
     public static class Cfg
@@ -137,6 +138,7 @@ public class Xml
             
             genCfg.start     = ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "start"));
             genCfg.end       = genCfg.start + ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "qnty"));
+            genCfg.peptideLength = Integer.parseInt(Utils.getChildAttr(root, "generator", "peptideLength"));
             doBinderPersist  = Utils.getChildAttr(root, "binders", "doBinderPersist").equals("1");
             doBinderStore    = Utils.getChildAttr(root, "binders", "doBinderStore").equals("1");
             doBinderCount    = Utils.getChildAttr(root, "binders", "doBinderCount").equals("1");

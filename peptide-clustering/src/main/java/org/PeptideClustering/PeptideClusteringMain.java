@@ -25,7 +25,7 @@ public class PeptideClusteringMain
 
             Xml.Cfg pssmhcCfg = new Xml.Cfg(Xml.Utils.firstOrDef(args));
             Xml.PSSMCfg pssmConfig = pssmhcCfg.getSinglePSSMCfg();
-            pssmConfig.peptideLength = PeptideGen.pepLen; //NB! should be some extra parameter in xml
+            pssmConfig.peptideLength = pssmhcCfg.genCfg.peptideLength;
 
             Impl.PSSMHCpanSparkFunc   pssmhcSparkFunc = new Impl.PSSMHCpanSparkFunc(pssmConfig);
             Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);

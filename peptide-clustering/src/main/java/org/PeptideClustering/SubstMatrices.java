@@ -70,6 +70,8 @@ class MaxPosDiffElem extends scala.Tuple2<Double, Integer>
     public MaxPosDiffElem(Double sim, Integer diff) { super(sim, diff); }
 }
 
+//Estimates maximum amount of amino acids different between two peptides with given similarity
+//Note peptide length is hardcoded to PeptideGen.PepLenDefault
 class MaxPosDiff extends ArrayList<MaxPosDiffElem> 
                  implements Serializable
 {
@@ -88,7 +90,8 @@ class MaxPosDiff extends ArrayList<MaxPosDiffElem>
         
         for (double sim=0.0; sim<1.0; sim+=Interval)
         {
-            int maxPosDiff = PeptideGen.pepLen - (int)Math.ceil((double)PeptideGen.pepLen * sim * diagRatio);
+            final int pepLen = PeptideGen.PepLenDefault;
+            final int maxPosDiff = pepLen - (int)Math.ceil((double)pepLen * sim * diagRatio);
             this.add(new MaxPosDiffElem(sim, maxPosDiff));
         }
     }
