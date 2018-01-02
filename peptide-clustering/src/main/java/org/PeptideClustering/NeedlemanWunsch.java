@@ -928,7 +928,7 @@ public class NeedlemanWunsch
             Impl.ScoreFilterSparkFunc ic50FilterSparkFunc = new Impl.ScoreFilterSparkFunc(pssmhcCfg.ic50Threshold);
             
             JavaRDD<String> binders = 
-                sqlc.range(pssmhcCfg.start, pssmhcCfg.end, 1, appCfg.partitions)
+                sqlc.range(pssmhcCfg.genCfg.start, pssmhcCfg.genCfg.end, 1, appCfg.partitions)
                 .map(new Impl.PeptideGenSparkFunc(), Encoders.STRING())
                 .toJavaRDD()
                 .map(pssmhcSparkFunc)

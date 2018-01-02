@@ -114,10 +114,15 @@ public class Xml
         public int    peptideLength = -1;
     }
 
-    public static class Cfg
+    public static class PeptideGenCfg
     {
         public long start;
         public long end;
+    }
+    
+    public static class Cfg
+    {
+        public PeptideGenCfg genCfg = new PeptideGenCfg();
         public int partitions;
         public boolean doBinderPersist, doBinderStore, doBinderCount;
         public int ic50Threshold;
@@ -130,8 +135,8 @@ public class Xml
         {
             final Element root = Utils.parseXml(xmlFilename);
             
-            start            = ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "start"));
-            end      = start + ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "qnty"));
+            genCfg.start     = ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "start"));
+            genCfg.end       = genCfg.start + ParseLongWithSuffix(Utils.getChildAttr(root, "generator", "qnty"));
             doBinderPersist  = Utils.getChildAttr(root, "binders", "doBinderPersist").equals("1");
             doBinderStore    = Utils.getChildAttr(root, "binders", "doBinderStore").equals("1");
             doBinderCount    = Utils.getChildAttr(root, "binders", "doBinderCount").equals("1");
