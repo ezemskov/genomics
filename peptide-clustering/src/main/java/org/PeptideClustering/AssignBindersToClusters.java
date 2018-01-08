@@ -85,7 +85,8 @@ public class AssignBindersToClusters
             
             final long timeStart = System.currentTimeMillis();
             
-            int fewerPartitions = (int)(0.1 * appCfg.partitions);
+            int fewerPartitions = Math.max(1, (int)(0.1 * appCfg.partitions));
+            
             JavaRDD<String> binders = 
                 sqlc.range(genCfg.start, genCfg.end, 1, appCfg.partitions)
                 .map(new Impl.PeptideGenSparkFunc(genCfg.peptideLength), Encoders.STRING())
@@ -99,8 +100,16 @@ public class AssignBindersToClusters
             //final long timeBinders = System.currentTimeMillis();
             //System.out.format("Calc duration %.1f sec\n", (timeBinders - timeStart)/1000.f);
             
-            JavaRDD<Impl.ScoredPeptide> clusterCentersScored = 
-                jsc.textFile(appCfg.peptidesFilename, fewerPartitions)
+            JavaRDD<String> clusterCenters = jsc.textFile(appCfg.peptidesFilename, fewerPartitions);
+            final int firstPeptideLen = clusterCenters.first().length();
+            if (firstPeptideLen != pssmConfig.peptideLength)
+            {
+                System.err.format("Inconsistent peptide length : %d in file at peptidesFilePath, %d in xml config\n",
+                    firstPeptideLen, pssmConfig.peptideLength);
+                return;
+            }
+                
+            JavaRDD<Impl.ScoredPeptide> clusterCentersScored = clusterCenters
                    .map(pssmhcSparkFunc)
                    .persist(StorageLevel.MEMORY_AND_DISK());
             
