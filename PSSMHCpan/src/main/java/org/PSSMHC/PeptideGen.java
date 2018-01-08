@@ -1,8 +1,9 @@
 package org.PSSMHC;
 
+import java.io.Serializable;
 import java.lang.StringBuilder;
 
-public class PeptideGen
+public class PeptideGen implements Serializable
 {
     public static int PepLenDefault = 9;
     private int _pepLen = -1;
@@ -18,12 +19,13 @@ public class PeptideGen
         _maxIndex = (long)Math.pow(Impl.Consts.aLen, _pepLen) - 1; //20^N - 1
         _lastPepCharPos = new int[_pepLen];
     }
-
-    public PeptideGen() 
-    { 
-        this(PepLenDefault); 
+    
+    //Substitute for default contructor (which might be implicitly called within PeptideGenSparkFunc)
+    static public PeptideGen CreateDefLen()
+    {
+        return new PeptideGen(PepLenDefault);
     }
-
+        
     /**
      * @param index number of peptide in lexicographical order, 
      * i.e. AAAAAAAAA is #0, AAAAAAAAC is #1, and YYYYYYYYY is #20^9-1

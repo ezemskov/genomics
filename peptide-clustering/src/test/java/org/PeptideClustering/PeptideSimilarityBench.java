@@ -66,7 +66,7 @@ public class PeptideSimilarityBench
     private void benchmark(IPeptideDistance func, boolean doRegenerate)
     {
         Random randGen = new Random();
-        PeptideGen pepGen = new PeptideGen();
+        PeptideGen pepGen = PeptideGen.CreateDefLen();
         
         final int IterationsCount = 1000000;
         final long startTime = System.currentTimeMillis();

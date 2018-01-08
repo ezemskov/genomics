@@ -91,7 +91,7 @@ public class PeptideGenTest
     @Test(expected = IndexOutOfBoundsException.class)
     public void testIdxOutOfRange1() 
     {
-        new PeptideGen().Generate(-10);
+        PeptideGen.CreateDefLen().Generate(-10);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)

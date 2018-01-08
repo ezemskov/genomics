@@ -63,7 +63,7 @@ public class PeptideSimilarityTest
     private void testAvgRandSimilarityOnce()
     {
         Random randGen = new Random();
-        PeptideGen pepGen = new PeptideGen();
+        PeptideGen pepGen = PeptideGen.CreateDefLen();
         int qnty = 1000;
         double totalSim = 0.0;
         double randomThreshold = 0.05;
